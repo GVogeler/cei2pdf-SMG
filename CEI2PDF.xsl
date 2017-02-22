@@ -6,6 +6,8 @@
     <xsl:preserve-space elements="*"/>
     <xsl:output indent="yes"/>
     
+    <!-- test für git -->
+    
      <xsl:variable name="newText"
         select="parse-xml(unparsed-text('./CVU6_26.01.17.xml'))"/> 
     
