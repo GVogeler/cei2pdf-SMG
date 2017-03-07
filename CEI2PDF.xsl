@@ -8,7 +8,7 @@
 
     <!-- Leerzeichen aus Elementen rausziehen (löschen und zwischen Elemente schreiben) -->
     <xsl:variable name="newText"
-        select="parse-xml(replace(unparsed-text('./CVU6_26.01.17.xml'), '([\S]) (&lt;/[^>]*?>&lt;[^>]*?>)', '$1$2 '))"/>
+        select="parse-xml(replace(unparsed-text('./CVU6_02.03.17.xml'), '([\S]) (&lt;/[^>]*?>&lt;[^>]*?>)', '$1$2 '))"/>
 
     <!-- Wurzelknoten -->
     <xsl:template match="/">
@@ -737,17 +737,19 @@
     <!-- Template "abstract" / Zusammenafssung der Urkunde: recte und Blocksatz; cei:foreign und cei:quote kursiv -->
     <xsl:template name="abstract">
         <xsl:if test="//cei:abstract">
-            <fo:block text-align="justify">
+            <fo:block text-align="justify" text-indent="10mm">
+               
                 <xsl:apply-templates
                     select="//cei:abstract/text() | //cei:abstract//cei:foreign | //cei:abstract//cei:quote"
                 />
+              
             </fo:block>
         </xsl:if>
     </xsl:template>
 
     <!-- Template "wittness" / Quelle der Urkunde -->
 
-    <!-- Fall 1: Es ist ein Oroginal -->
+    <!-- Fall 1: Es ist ein Original -->
     <xsl:template name="wittnes">
         <xsl:if test="//cei:witnessOrig/cei:traditioForm/text()">
             <fo:block text-indent="10mm" text-align="justify" margin-top="5mm" font-size="10pt">
@@ -810,7 +812,7 @@
                 -->
                 <xsl:choose>
                     <xsl:when test="//cei:witListPar//cei:traditioForm">
-                        <xsl:text>, </xsl:text>
+                        <xsl:text>; </xsl:text>
                     </xsl:when>
                     <xsl:otherwise>
                         <xsl:text>. </xsl:text>
@@ -932,12 +934,13 @@
 
     <!-- Template text() -->
     <xsl:template match="text()">
-        <xsl:value-of select="."/>
+       <xsl:value-of select="."/>
     </xsl:template>
 
     <!-- Template cei:quote -->
     <xsl:template match="cei:quote">
         <fo:inline font-style="italic">
+            
             <xsl:apply-templates select="* | text()"/>
         </fo:inline>
     </xsl:template>
@@ -969,6 +972,11 @@
         <fo:inline font-style="italic">
             <xsl:apply-templates select="* | text()"/>
         </fo:inline>
+    </xsl:template>
+    
+    <!-- cei:expan -->
+    <xsl:template match="cei:expan">
+        <xsl:text>(</xsl:text><xsl:apply-templates select="* | text()"></xsl:apply-templates><xsl:text>)</xsl:text>
     </xsl:template>
 
     <!-- cei:author-->
@@ -1097,7 +1105,7 @@
                                 <xsl:value-of select="substring-after(., ' ')"/>
                             </xsl:when>
                             <xsl:otherwise>
-                                <xsl:text xml:space="preserve"> </xsl:text>
+                                <xsl:text xml:space="preserve"> </xsl:text>
                                 <xsl:value-of select="substring-after(., ' ')"/>
 
                             </xsl:otherwise>
@@ -1153,10 +1161,14 @@
 
             <xsl:choose>
                 <xsl:when test="preceding-sibling::node()[1][self::cei:damage]"/>
-                <!-- Test: Knoten davor und danach auf Leerzeichen prüfen -->
+                <!-- Test: Knoten davor und danach auf Leerzeichen prüfen  -->
                 <xsl:when
-                    test="matches(substring(following::text()[1], 1, 1), '[A-Z]') or ends-with(preceding::text()[1], ' ') and not(ancestor::cei:quote)">
+                    test="matches(substring(following::text()[1], 1, 1), '[A-Z]') or ends-with(preceding::text()[1], ' ')  and not(ancestor::cei:quote) ">
                     <xsl:text>| </xsl:text>
+                </xsl:when>
+                <xsl:when
+                    test="matches(substring(following::text()[1], 1, 1), ' ') or ends-with(preceding::text()[1], ' ')  and not(ancestor::cei:quote) ">
+                    <xsl:text> |</xsl:text>
                 </xsl:when>
                 <xsl:when
                     test="matches(substring(following::text()[1], 1, 1), '[A-Z]') or ends-with(preceding::text()[1], ' ') and ancestor::cei:quote">
@@ -1164,6 +1176,7 @@
                 </xsl:when>
 
                 <xsl:otherwise>
+                    
                     <xsl:text>|</xsl:text>
                 </xsl:otherwise>
             </xsl:choose>
@@ -1785,17 +1798,36 @@
 
         <!-- Fußnoten -->
         <fo:footnote>
-
-            <fo:inline baseline-shift="super" font-size="8pt" font-style="normal">
-
-                <xsl:number
-                    value="
+            
+            <xsl:choose>
+                <xsl:when test="self::cei:hi[contains(@rend, 'in nesso monogrammatico')]">
+                    <fo:inline baseline-shift="super" font-size="8pt" font-style="normal"  text-indent="-5mm">
+                    <xsl:number
+                        value="
                         count(preceding::cei:space[ancestor::cei:tenor] | preceding::cei:damage[attribute()][ancestor::cei:tenor] |
                         preceding::cei:sic[@corr or not(attribute())] | preceding::cei:unclear[@reason] | preceding::cei:add[@type] | preceding::cei:c[@type] |
                         preceding::cei:corr[@sic and @type] | preceding::cei:corr[@type and not(@sic)] | preceding::cei:corr[@sic and not(@type)] | preceding::cei:del[@type] |
                         preceding::cei:handShift[@hand] | preceding::cei:hi[contains(@rend, 'in nesso monogrammatico')] | preceding::cei:add[@hand]) + 1"
-                    format="a"/>
-            </fo:inline>
+                        format="a"/>
+                    </fo:inline>
+                </xsl:when>
+                <xsl:otherwise>
+                    <fo:inline baseline-shift="super" font-size="8pt" font-style="normal">
+                    <xsl:number
+                        value="
+                        count(preceding::cei:space[ancestor::cei:tenor] | preceding::cei:damage[attribute()][ancestor::cei:tenor] |
+                        preceding::cei:sic[@corr or not(attribute())] | preceding::cei:unclear[@reason] | preceding::cei:add[@type] | preceding::cei:c[@type] |
+                        preceding::cei:corr[@sic and @type] | preceding::cei:corr[@type and not(@sic)] | preceding::cei:corr[@sic and not(@type)] | preceding::cei:del[@type] |
+                        preceding::cei:handShift[@hand] | preceding::cei:hi[contains(@rend, 'in nesso monogrammatico')] | preceding::cei:add[@hand]) + 1"
+                        format="a"/>
+                    </fo:inline>
+                </xsl:otherwise>
+            </xsl:choose>
+            
+            
+
+                
+            
 
 
 
