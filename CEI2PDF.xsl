@@ -1526,6 +1526,7 @@
                     <fo:inline font-style="normal" font-size="75%">
                         <xsl:value-of select="upper-case(normalize-space(.))"/>
                     </fo:inline>
+                    <xsl:text>&#x200D;</xsl:text>
                 </xsl:non-matching-substring>
             </xsl:analyze-string>
         </xsl:if>
@@ -1618,7 +1619,6 @@
         </xsl:if>
 
         <!-- Fußnoten -->
-       
         <fo:footnote>
 
             <fo:inline baseline-shift="super" font-size="8pt" font-style="normal">
@@ -1635,6 +1635,7 @@
                 <fo:block> </fo:block>
             </fo:footnote-body>
         </fo:footnote>
+        
 
     </xsl:template>
 
