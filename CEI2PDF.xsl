@@ -121,7 +121,7 @@
                                         //cei:tenor//cei:damage[attribute()] |
                                         //cei:tenor//cei:del[@type] |
                                         //cei:tenor//cei:handShift[@hand] |
-                                        //cei:tenor//cei:hi[contains(@rend, 'in nesso monogrammatico')] |
+                                        //cei:tenor//cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend,'litterae elongatae'))] |
                                         //cei:tenor//cei:sic[@corr or not(attribute())] |
                                         //cei:tenor//cei:space |
                                         //cei:tenor//cei:supplied[@type] |
@@ -454,10 +454,10 @@
                                         </xsl:analyze-string>
                                     </xsl:if>
 
-                                    <!-- cei:hi[contains(@rend, 'in nesso monogrammatico')] -->
+                                    <!-- cei:hi[contains(not(contains(@rend, 'in nesso monogrammatico'))] -->
                                     <xsl:if
-                                        test="self::cei:hi[contains(@rend, 'in nesso monogrammatico')]">
-                                        <xsl:value-of select="."/>
+                                        test="self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend,'litterae elongatae'))]">
+                                        <xsl:apply-templates select="* | text()" mode="tenor"/>
                                         <xsl:text> </xsl:text>
                                         <xsl:analyze-string select="@rend" regex="/\w?[^/]*\w?/">
                                             <xsl:matching-substring>
@@ -1268,7 +1268,7 @@
             cei:damage[attribute()] |
             cei:del[@type] |
             cei:handShift[@hand] |
-            cei:hi[contains(@rend, 'in nesso monogrammatico')] |
+            cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend,'litterae elongatae'))] |
             cei:sic[@corr or not(attribute())] |
             cei:space |
             cei:supplied[@type] |
@@ -1516,8 +1516,8 @@
             </xsl:if>
         </xsl:if>
 
-        <!-- cei:hi[contains(@rend, 'in nesso monogrammatico')]  -->
-        <xsl:if test="self::cei:hi[contains(@rend, 'in nesso monogrammatico')]">
+        <!-- self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend,'litterae elongatae'))]  -->
+        <xsl:if test="self::cei:hi[not(contains(@rend, 'Test1'))]">
             <xsl:analyze-string select="text()" regex="[A-Z]">
                 <xsl:matching-substring>
                     <xsl:value-of select="normalize-space(.)"/>
@@ -1618,6 +1618,7 @@
         </xsl:if>
 
         <!-- Fußnoten -->
+       
         <fo:footnote>
 
             <fo:inline baseline-shift="super" font-size="8pt" font-style="normal">
@@ -1626,7 +1627,7 @@
                         count(preceding::cei:space[ancestor::cei:tenor] | preceding::cei:damage[attribute()][ancestor::cei:tenor] |
                         preceding::cei:sic[@corr or not(attribute())] | preceding::cei:unclear[@reason] | preceding::cei:add[@type] | preceding::cei:c[@type] |
                         preceding::cei:corr[@sic and @type] | preceding::cei:corr[@type and not(@sic)] | preceding::cei:corr[@sic and not(@type)] | preceding::cei:del[@type] |
-                        preceding::cei:handShift[@hand] | preceding::cei:hi[contains(@rend, 'in nesso monogrammatico')] | preceding::cei:add[@hand]) + 1"
+                        preceding::cei:handShift[@hand] | preceding::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend,'litterae elongatae'))] | preceding::cei:add[@hand]) + 1"
                     format="a"/>
             </fo:inline>
 
