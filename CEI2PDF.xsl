@@ -5,14 +5,20 @@
     version="3.0" id="charter2pdf">
     <xsl:preserve-space elements="*"/>
     <xsl:output indent="yes"/>
+    <xsl:key name="names" match="//*" use="local-name(.)"/>
+    
+    <xsl:variable name="CVU" select="'./CVU7-3_korr.xml'"/>
+    <xsl:variable name="Test1" select="'./Originale_Copia/10_AA_I_18.xml'"/>
+    <xsl:variable name="Test2" select="'./Originale_Copia/3_AA_II_80.xml'"/>
 
 
     <!-- Leerzeichen aus Elementen rausziehen (löschen und zwischen Elemente schreiben) -->
     <!-- Input Urkunden // XML-Dateien -->
     <xsl:variable name="newText0"
-        select="replace(unparsed-text('./CVU7_final2.xml'), '([\S]) ((&lt;/[^>]*?>)+)', '$1$2 ')"/>
+        select="replace(unparsed-text($CVU), '([\S]) ((&lt;/[^>]*?>)+)', '$1$2 ')"/>
     <xsl:variable name="newText"
         select="parse-xml(replace($newText0, ' (&lt;cei:note.*?&lt;/cei:note>)', '$1 '))"/>
+    
 
     <!-- Wurzelknoten -->
     <xsl:template match="/">
@@ -137,7 +143,7 @@
 
                                     <!-- cei:add[@hand] -->
                                     <xsl:if test="self::cei:add[@hand and not(@type)]">
-                                        <xsl:apply-templates select="* | text()" mode="tenor"/>
+                                        <xsl:apply-templates select="* | text()"/>
                                         <xsl:text> </xsl:text>
                                         <xsl:analyze-string select="@hand" regex="/\w?[^/]*\w?/">
                                             <xsl:matching-substring>
@@ -487,7 +493,7 @@
                                     <!-- cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))] -->
                                     <xsl:if
                                         test="self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))]">
-                                        <xsl:apply-templates select="* | text()" mode="tenor"/>
+                                        <xsl:apply-templates select="* | text()"/>
                                         <xsl:text> </xsl:text>
                                         <xsl:analyze-string select="@rend" regex="/\w?[^/]*\w?/">
                                             <xsl:matching-substring>
@@ -669,7 +675,7 @@
 
                                     <!-- cei:note -->
                                     <xsl:if test="self::cei:note">
-                                        <xsl:apply-templates select="* | text()" mode="fuß"/>
+                                        <xsl:apply-templates select="* | text()"/>
                                         <xsl:if
                                             test="not(ends-with(normalize-space(.), '.')) and not(ends-with(normalize-space(.), './'))">
                                             <xsl:text>.</xsl:text>
@@ -698,6 +704,7 @@
                         <xsl:call-template name="regest"/>
                         <xsl:call-template name="physicalDesc"/>
                         <xsl:call-template name="misura"/>
+                        <xsl:call-template name="link"/>
                         <fo:block space-after="5mm"/>
                         <xsl:call-template name="tenor"/>
 
@@ -717,15 +724,8 @@
 
     </xsl:template>
 
-    <!-- Templates Fußnoten -->
-    <!-- cei:bibl (fuß) -->
-    <xsl:template match="cei:bibl" mode="fuß">
-        <xsl:apply-templates select="* | text()"/>
-    </xsl:template>
-
 
     <!-- Templates Metadaten-->
-
 
     <!-- Template "issued" (Datum und Ort der Urkunde) -->
     <xsl:template name="issued">
@@ -933,8 +933,20 @@
         </xsl:if>
     </xsl:template>
 
+    <!-- Template "link" -->
+    <xsl:template name="link">
+        <fo:block text-indent="10mm" text-align="justify" font-size="10pt">
+            <xsl:text>Edizione digitale dei documenti dell'abbazia di S. Maria della Grotta presso Benevento (1200- 1250), n. ## (</xsl:text>
+            <fo:inline color="blue"><xsl:text>http://monasterium.net/mom/SMG1200-1250/SMG', '_##', '/charter</xsl:text></fo:inline>
+            <xsl:value-of
+                select="concat(')', '')"
+            />
+        </fo:block>
 
-    <!-- Templates Metadaten Ausgabe Text  -->
+    </xsl:template>
+
+
+    <!-- Templates Metadaten/Fußnoten Ausgabe Text  -->
 
     <!-- text() -->
     <xsl:template match="text()">
@@ -1172,7 +1184,25 @@
     <!-- cei:damage[not(attribute())] (tenor) -->
     <xsl:template match="cei:damage[not(attribute())]" mode="tenor" priority="-1">
         <xsl:if
-            test="not(preceding-sibling::node()[1][self::cei:unclear][not(ends-with(., ' '))]) and not(starts-with(., ' '))">
+            test="
+                not(preceding-sibling::node()[1][
+                self::cei:note or
+                self::cei:quote[ancestor::cei:cit] or
+                self::cei:add[@hand] or
+                self::cei:add[@type] or
+                self::cei:c[@type] or
+                self::cei:corr[@sic and @type] or
+                self::cei:corr[@sic and not(@type)] or
+                self::cei:corr[not(@sic) and @type] or
+                self::cei:damage[attribute()] or
+                self::cei:del[@type] or
+                self::cei:handShift[@hand] or
+                self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))] or
+                self::cei:sic[@corr or not(attribute())] or
+                self::cei:space or
+                self::cei:supplied[@type] or
+                self::cei:unclear[@reason]
+                ])">
             <xsl:text>[</xsl:text>
             <xsl:apply-templates select="* | text()" mode="tenor"/>
             <xsl:text>]</xsl:text>
@@ -1232,59 +1262,60 @@
     <xsl:template match="cei:lb" mode="tenor" priority="-1">
         <xsl:if test="preceding-sibling::text()[1]">
             <xsl:choose>
-                <xsl:when test="preceding-sibling::node()[1][self::cei:damage]"/>
-                <!-- beides Textknoten; beide Leerzeichen -->
-                <xsl:when
-                    test="ends-with(preceding::node()[1][self::text()], ' ') and starts-with(following::node()[1][self::text()], ' ')">
-                    <xsl:text>|</xsl:text>
-                </xsl:when>
-                <!-- beides Textknoten; erster Leerzeichen, zweiter kein Leerzeichen -->
-                <xsl:when
-                    test="ends-with(preceding::node()[1][self::text()], ' ') and matches(substring(following::node()[1][self::text()], 1, 1), '\S')">
-                    <xsl:text>| </xsl:text>
-                </xsl:when>
-                <!-- beides Textknoten; erster kein Leerzeichen, zweiter Leerzeichen -->
-                <xsl:when
-                    test="matches(substring(preceding::node()[1][self::text()], string-length(preceding::node()[1][self::text()]), 1), '\S') and starts-with(following::node()[1][self::text()], ' ')">
-                    <xsl:text> |</xsl:text>
-                </xsl:when>
-                <!-- beides Textknoten; erster kein Leerzeichen, zweiter kein Leerzeichen -->
-                <xsl:when
-                    test="matches(substring(preceding::node()[1][self::text()], string-length(preceding::node()[1][self::text()]), 1), '\S') and matches(substring(following::node()[1][self::text()], 1, 1), '\S')">
-                    <xsl:text>|</xsl:text>
-                </xsl:when>
-                <!-- keine Textknoten -->
-                <xsl:when test="preceding::node()[1][self::*] and following::node()[1][self::*]">
-                    <xsl:text>|</xsl:text>
-                </xsl:when>
-                <!-- erster Textknoten, zweiter kein Textknoten; erster Leerzeichen  -->
-                <xsl:when
-                    test="ends-with(preceding::node()[1][self::text()], ' ') and following::node()[1][self::*]">
-                    <xsl:text>| </xsl:text>
-                </xsl:when>
-                <!-- erster kein Textknoten, zweiter Textknoten; zweiter Leerzeichen  -->
-                <xsl:when
-                    test="preceding::node()[1][self::*] and starts-with(following::node()[1][self::text()], ' ')">
-                    <xsl:text> |</xsl:text>
-                </xsl:when>
-                <!-- erster Textknoten, zweiter kein Textknoten; erster kein Leerzeichen  -->
-                <xsl:when
-                    test="matches(substring(preceding::node()[1][self::text()], string-length(preceding::node()[1][self::text()]), 1), '\S') and following::node()[1][self::*]">
-                    <xsl:text>|</xsl:text>
-                </xsl:when>
-                <!-- erster kein Textknoten, zweiter Textknoten; zweiter kein Leerzeichen  -->
-                <xsl:when
-                    test="preceding::node()[1][self::*] and matches(substring(following::node()[1][self::text()], 1, 1), '\S')">
-                    <xsl:text>|</xsl:text>
-                </xsl:when>
-                <xsl:otherwise>!!!</xsl:otherwise>
-            </xsl:choose>
-        </xsl:if>
+                    <xsl:when test="preceding-sibling::node()[1][
+                        self::cei:note or
+                        self::cei:quote[ancestor::cei:cit] or
+                        self::cei:add[@hand] or
+                        self::cei:add[@type] or
+                        self::cei:c[@type] or
+                        self::cei:corr[@sic and @type] or
+                        self::cei:corr[@sic and not(@type)] or
+                        self::cei:corr[not(@sic) and @type] or
+                        self::cei:damage[attribute()] or
+                        self::cei:del[@type] or
+                        self::cei:handShift[@hand] or
+                        self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))] or
+                        self::cei:sic[@corr or not(attribute())] or
+                        self::cei:space or
+                        self::cei:supplied[@type] or
+                        self::cei:unclear[@reason]
+                        ][not(ends-with(text()[1],' '))]">                      
+                    </xsl:when>
+                <xsl:otherwise>
+                    <xsl:choose>
+                        <!-- beides Textknoten; beide Leerzeichen -->
+                        <xsl:when
+                            test="ends-with(preceding::text()[1], ' ') and starts-with(following::text()[1], ' ')">
+                            <xsl:text>|</xsl:text>
+                        </xsl:when>
+                        <!-- beides Textknoten; erster Leerzeichen, zweiter kein Leerzeichen -->
+                        <xsl:when
+                            test="ends-with(preceding::text()[1], ' ') and matches(substring(following::text()[1], 1, 1), '\S')">
+                            <xsl:text>| </xsl:text>
+                        </xsl:when>
+                        <!-- beides Textknoten; erster kein Leerzeichen, zweiter Leerzeichen -->
+                        <xsl:when
+                            test="matches(substring(preceding::text()[1], string-length(preceding::text()[1]), 1), '\S') and starts-with(following::text()[1], ' ')">
+                            <xsl:text> |</xsl:text>
+                        </xsl:when>
+                        <!-- beides Textknoten; erster kein Leerzeichen, zweiter kein Leerzeichen -->
+                        <xsl:when
+                            test="matches(substring(preceding::text()[1], string-length(preceding::text()[1]), 1), '\S') and matches(substring(following::text()[1], 1, 1), '\S')">
+                            <xsl:text>|</xsl:text>
+                        </xsl:when>
+                        <xsl:otherwise>!!!</xsl:otherwise>
+                    </xsl:choose>
+                </xsl:otherwise>
+            </xsl:choose></xsl:if>
+
     </xsl:template>
 
     <!-- cei:persName (tenor)-->
     <xsl:template match="cei:persName" mode="tenor" priority="-1">
-        <xsl:apply-templates select="* | text()" mode="tenor"/>
+        <xsl:if
+            test="not(preceding-sibling::node()[1][self::cei:damage][not(ends-with(., ' '))] and not(starts-with(., ' ')))">
+            <xsl:apply-templates select="* | text()" mode="tenor"/>
+        </xsl:if>
     </xsl:template>
 
     <!-- cei:pict (tenor) -->
@@ -1404,10 +1435,18 @@
         <xsl:if test="self::cei:quote">
             <fo:inline font-style="italic">
                 <xsl:apply-templates select="* | text()" mode="tenor"/>
+                
+                <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
+                <xsl:if
+                    test="not(ends-with(., ' '))">
+                    <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*=current()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+                </xsl:if>
+                
                 <fo:footnote>
                     <fo:inline baseline-shift="super" font-size="8pt" font-style="normal">
                         <xsl:number
-                            value="count(preceding::cei:cit[ancestor::cei:tenor] | preceding::cei:note[ancestor::cei:tenor]) + 1"/>
+                            value="count(preceding::cei:cit[ancestor::cei:tenor] | preceding::cei:note[ancestor::cei:tenor]) + 1"
+                        />
                     </fo:inline>
                     <fo:footnote-body>
                         <fo:block> </fo:block>
@@ -1439,242 +1478,113 @@
         <!-- cei:add[@hand] -->
         <xsl:if test="self::cei:add[@hand]">
             <xsl:apply-templates select="* | text()" mode="tenor"/>
+            
+            <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if
-                test="not(starts-with(following-sibling::text()[1], ' ')) and not(ends-with(., ' '))">
-                <xsl:choose>
-                    <xsl:when
-                        test="ends-with(substring-before(following-sibling::text()[1], ' '), ',')">
-                        <xsl:value-of select="substring-before(following-sibling::text()[1], ',')"/>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        <!-- Achtung: geändert -->
-                        <xsl:value-of select="substring-before(following::text()[1], ' ')"/>
-                    </xsl:otherwise>
-                </xsl:choose>
+                test="not(ends-with(., ' '))">
+                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*=current()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
             </xsl:if>
+            
         </xsl:if>
 
         <!-- cei:add[@type and not(@hand)] -->
         <xsl:if test="self::cei:add[@type and not(@hand)]">
             <xsl:apply-templates select="* | text()" mode="tenor"/>
+
+            <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if
-                test="not(starts-with(following-sibling::text()[1], ' ')) and not(ends-with(., ' '))">
-                <xsl:choose>
-                    <xsl:when
-                        test="ends-with(substring-before(following-sibling::text()[1], ' '), ',')">
-                        <xsl:value-of select="substring-before(following-sibling::text()[1], ',')"/>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        <xsl:value-of select="substring-before(following-sibling::text()[1], ' ')"/>
-                    </xsl:otherwise>
-                </xsl:choose>
+                test="not(ends-with(., ' '))">
+                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*=current()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
             </xsl:if>
+
         </xsl:if>
 
         <!-- cei:c[@type] -->
         <xsl:if test="self::cei:c[@type]">
             <xsl:apply-templates select="* | text()" mode="tenor"/>
+
+            <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if
-                test="not(starts-with(following-sibling::text()[1], ' ')) and not(ends-with(., ' '))">
-                <xsl:choose>
-                    <xsl:when
-                        test="ends-with(substring-before(following-sibling::text()[1], ' '), ',')">
-                        <xsl:value-of select="substring-before(following-sibling::text()[1], ',')"/>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        <xsl:choose>
-                            <xsl:when test="contains(following-sibling::text()[1], ' ')">
-                                <xsl:value-of
-                                    select="substring-before(following-sibling::text()[1], ' ')"/>
-                            </xsl:when>
-                            <xsl:otherwise>
-                                <xsl:value-of select="following-sibling::text()[1]"/>
-                            </xsl:otherwise>
-                        </xsl:choose>
-                    </xsl:otherwise>
-                </xsl:choose>
+                test="not(ends-with(., ' '))">
+                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*=current()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
             </xsl:if>
+            
         </xsl:if>
 
         <!-- cei:corr[@sic and @type] -->
         <xsl:if test="self::cei:corr[@sic and @type]">
             <xsl:apply-templates select="* | text()" mode="tenor"/>
+
+            <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if
-                test="not(starts-with(following-sibling::text()[1], ' ')) and not(ends-with(., ' '))">
-                <xsl:choose>
-                    <xsl:when
-                        test="ends-with(substring-before(following-sibling::text()[1], ' '), ',')">
-                        <xsl:value-of select="substring-before(following-sibling::text()[1], ',')"/>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        <xsl:value-of select="substring-before(following-sibling::text()[1], ' ')"/>
-                    </xsl:otherwise>
-                </xsl:choose>
+                test="not(ends-with(., ' '))">
+                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*=current()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
             </xsl:if>
+            
         </xsl:if>
 
         <!-- cei:corr[@sic and not(@type)] -->
         <xsl:if test="self::cei:corr[@sic and not(@type)]">
             <xsl:apply-templates select="* | text()" mode="tenor"/>
+
+            <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if
-                test="not(starts-with(following-sibling::text()[1], ' ')) and not(ends-with(., ' '))">
-                <xsl:choose>
-                    <xsl:when
-                        test="ends-with(substring-before(following-sibling::text()[1], ' '), ',')">
-                        <xsl:value-of select="substring-before(following-sibling::text()[1], ',')"/>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        <xsl:value-of select="substring-before(following-sibling::text()[1], ' ')"/>
-                    </xsl:otherwise>
-                </xsl:choose>
+                test="not(ends-with(., ' '))">
+                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*=current()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
             </xsl:if>
+            
         </xsl:if>
 
         <!-- cei:corr[not(@sic) and @type] -->
         <xsl:if test="self::cei:corr[not(@sic) and @type]">
             <xsl:apply-templates select="* | text()" mode="tenor"/>
+
+            <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if
-                test="not(starts-with(following-sibling::text()[1], ' ')) and not(ends-with(., ' '))">
-                <xsl:choose>
-                    <xsl:when
-                        test="ends-with(substring-before(following-sibling::text()[1], ' '), ',')">
-                        <xsl:value-of select="substring-before(following-sibling::text()[1], ',')"/>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        <xsl:if test="contains(following-sibling::text()[1], ' ')">
-                            <xsl:value-of
-                                select="substring-before(following-sibling::text()[1], ' ')"/>
-                        </xsl:if>
-                        <xsl:if test="not(contains(following-sibling::text()[1], ' '))">
-                            <xsl:value-of select="following-sibling::text()[1]"/>
-                        </xsl:if>
-                    </xsl:otherwise>
-                </xsl:choose>
+                test="not(ends-with(., ' '))">
+                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*=current()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
             </xsl:if>
+            
         </xsl:if>
 
         <!-- cei:damage[@agent and @extent] tenor -->
         <xsl:if test="self::cei:damage[@agent and @extent]">
-            <xsl:if test="not(text())">
-                <xsl:choose>
-                    <xsl:when
-                        test="not(starts-with(following-sibling::text()[1], ' ')) and not(ends-with(., ' '))">
-                        <xsl:text>[...]</xsl:text>
-                        <xsl:choose>
-                            <xsl:when
-                                test="ends-with(substring-before(following-sibling::text()[1], ' '), ',')">
-                                <xsl:value-of
-                                    select="substring-before(following-sibling::text()[1], ',')"/>
-                            </xsl:when>
-                            <xsl:when
-                                test="ends-with(substring-before(following-sibling::text()[1], ' '), '.')">
-                                <xsl:value-of
-                                    select="substring-before(following-sibling::text()[1], '.')"/>
-                            </xsl:when>
-                            <xsl:otherwise>
-                                <xsl:choose>
-                                    <xsl:when test="contains(following-sibling::text()[1], ' ')">
-                                        <xsl:value-of
-                                            select="substring-before(following-sibling::text()[1], ' ')"
-                                        />
-                                    </xsl:when>
-                                    <xsl:otherwise>
-                                        <xsl:value-of select="following-sibling::text()[1]"/>
-                                    </xsl:otherwise>
-                                </xsl:choose>
-                            </xsl:otherwise>
-                        </xsl:choose>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        <xsl:text>[</xsl:text>
-                        <xsl:apply-templates select="text() | *" mode="tenor"/>
-                        <xsl:text>]</xsl:text>
-                    </xsl:otherwise>
-                </xsl:choose>
+            <xsl:text>[...]</xsl:text>
+            
+            <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
+            <xsl:if
+                test="not(ends-with(., ' '))">
+                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*=current()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
             </xsl:if>
+            
         </xsl:if>
 
         <!-- cei:damage[@agent and not(@extent)] -->
         <xsl:if test="self::cei:damage[@agent and not(@extent)]">
-            <xsl:choose>
-                <xsl:when
-                    test="not(starts-with(following-sibling::text()[1], ' ')) and not(ends-with(., ' '))">
-                    <xsl:text>[</xsl:text>
-                    <xsl:apply-templates select="text() | *" mode="tenor"/>
-                    <xsl:text>]</xsl:text>
-                    <xsl:choose>
-                        <xsl:when
-                            test="ends-with(substring-before(following-sibling::text()[1], ' '), ',')">
-                            <xsl:if test="following-sibling::node()[1][self::cei:lb]">|</xsl:if>
-                            <xsl:value-of
-                                select="substring-before(following-sibling::text()[1], ',')"/>
-                        </xsl:when>
-                        <xsl:otherwise>
-                            <xsl:choose>
-                                <xsl:when test="contains(following-sibling::text()[1], ' ')">
-                                    <xsl:if test="following-sibling::node()[1][self::cei:lb]"
-                                        >|</xsl:if>
-                                    <xsl:value-of
-                                        select="substring-before(following-sibling::text()[1], ' ')"
-                                    />
-                                </xsl:when>
-                                <xsl:otherwise>
-                                    <xsl:if test="following-sibling::node()[1][self::cei:lb]"
-                                        >|</xsl:if>
-                                    <xsl:value-of select="following-sibling::text()[1]"/>
-                                </xsl:otherwise>
-                            </xsl:choose>
-                        </xsl:otherwise>
-                    </xsl:choose>
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:text>[</xsl:text>
-                    <xsl:apply-templates select="text() | *" mode="tenor"/>
-                    <xsl:text>]</xsl:text>
-                </xsl:otherwise>
-            </xsl:choose>
+            
+            <xsl:text>[</xsl:text>
+            <xsl:apply-templates select="text() | *" mode="tenor"/>
+            <xsl:text>]</xsl:text>
+
+            <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
+            <xsl:if
+                test="not(ends-with(., ' '))">
+                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*=current()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            </xsl:if>
+            
         </xsl:if>
+
 
         <!-- cei:damage [not(@agent) and @extent] -->
         <xsl:if test="self::cei:damage[not(@agent) and @extent]">
-            <xsl:if test="not(text())">
-                <xsl:choose>
-                    <xsl:when
-                        test="not(starts-with(following-sibling::text()[1], ' ')) and not(ends-with(., ' '))">
-                        <xsl:text>[...]</xsl:text>
-                        <xsl:choose>
-                            <xsl:when
-                                test="ends-with(substring-before(following-sibling::text()[1], ' '), ',')">
-                                <xsl:value-of
-                                    select="substring-before(following-sibling::text()[1], ',')"/>
-                            </xsl:when>
-                            <xsl:when
-                                test="ends-with(substring-before(following-sibling::text()[1], ' '), '.')">
-                                <xsl:value-of
-                                    select="substring-before(following-sibling::text()[1], '.')"/>
-                            </xsl:when>
-                            <xsl:otherwise>
-                                <xsl:choose>
-                                    <xsl:when test="contains(following-sibling::text()[1], ' ')">
-                                        <xsl:value-of
-                                            select="substring-before(following-sibling::text()[1], ' ')"
-                                        />
-                                    </xsl:when>
-                                    <xsl:otherwise>
-                                        <xsl:value-of select="following-sibling::text()[1]"/>
-                                    </xsl:otherwise>
-                                </xsl:choose>
-
-                            </xsl:otherwise>
-                        </xsl:choose>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        <xsl:text>[...</xsl:text>
-                        <xsl:apply-templates select="text() | *" mode="tenor"/>
-                        <xsl:text>]</xsl:text>
-                    </xsl:otherwise>
-                </xsl:choose>
+            <xsl:text>[...]</xsl:text>
+            
+            <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
+            <xsl:if
+                test="not(ends-with(., ' '))">
+                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*=current()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
             </xsl:if>
+            
         </xsl:if>
 
 
@@ -1682,97 +1592,86 @@
         <xsl:if
             test="self::cei:hi[contains(@rend, 'monogrammat') or contains(@rend, 'maiusc') or contains(@rend, 'elongat') or contains(@rend, 'capital') or contains(@rend, 'oncia')]">
             <xsl:apply-templates select="text() | *" mode="sc"> </xsl:apply-templates>
+            
+            <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
+            <xsl:if
+                test="not(ends-with(., ' '))">
+                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*=current()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            </xsl:if>
+            
         </xsl:if>
 
         <!-- cei:hi[not(contains(@rend,'monogrammat') or contains(@rend,'maiusc') or contains(@rend,'elongat') or contains(@rend,'capital') or contains(@rend,'oncia'))] -->
         <xsl:if
             test="self::cei:hi[not(contains(@rend, 'monogrammat') or contains(@rend, 'maiusc') or contains(@rend, 'elongat') or contains(@rend, 'capital') or contains(@rend, 'oncia'))]">
             <xsl:apply-templates select="text() | *" mode="tenor"> </xsl:apply-templates>
+            
+            <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
+            <xsl:if
+                test="not(ends-with(., ' '))">
+                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*=current()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            </xsl:if>
+            
         </xsl:if>
 
         <!-- cei:sic[@corr] -->
         <xsl:if test="self::cei:sic[@corr]">
             <xsl:apply-templates select="* | text()" mode="tenor"/>
+            
+            <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
+            <xsl:if
+                test="not(ends-with(., ' '))">
+                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*=current()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            </xsl:if>
+            
         </xsl:if>
 
         <!-- cei:sic[not(attribute())] tenor -->
         <xsl:if test="self::cei:sic[not(attribute())]">
             <xsl:apply-templates select="* | text()" mode="tenor"/>
+            
+            <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
+            <xsl:if
+                test="not(ends-with(., ' '))">
+                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*=current()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            </xsl:if>
+            
         </xsl:if>
 
         <!-- cei:space -->
         <xsl:if test="self::cei:space">
             <xsl:text>***</xsl:text>
+            
+            <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
+            <xsl:if
+                test="not(ends-with(., ' '))">
+                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*=current()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            </xsl:if>
+            
         </xsl:if>
 
         <!-- cei:supplied[@type] -->
         <xsl:if test="self::cei:supplied[@type]">
-            <xsl:choose>
-                <xsl:when
-                    test="not(starts-with(following-sibling::text()[1], ' ')) and not(ends-with(., ' '))">
                     <xsl:apply-templates select="text() | *" mode="tenor"/>
-                    <xsl:choose>
-                        <xsl:when
-                            test="ends-with(substring-before(following-sibling::text()[1], ' '), ',')">
-                            <xsl:value-of
-                                select="substring-before(following-sibling::text()[1], ',')"/>
-                        </xsl:when>
-                        <xsl:when
-                            test="ends-with(substring-before(following-sibling::text()[1], ' '), '.')">
-                            <xsl:value-of
-                                select="substring-before(following-sibling::text()[1], '.')"/>
-                        </xsl:when>
-                        <xsl:otherwise>
-                            <xsl:choose>
-                                <xsl:when test="contains(following-sibling::text()[1], ' ')">
-                                    <xsl:value-of
-                                        select="substring-before(following-sibling::text()[1], ' ')"
-                                    />
-                                </xsl:when>
-                                <xsl:otherwise>
-                                    <xsl:value-of select="following-sibling::text()[1]"/>
-                                </xsl:otherwise>
-                            </xsl:choose>
-                        </xsl:otherwise>
-                    </xsl:choose>
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:text>[</xsl:text>
-                    <xsl:apply-templates select="text() | *" mode="tenor"/>
-                    <xsl:text>]</xsl:text>
-                </xsl:otherwise>
-            </xsl:choose>
+
+            <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
+            <xsl:if
+                test="not(ends-with(., ' '))">
+                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*=current()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            </xsl:if>
+            
         </xsl:if>
 
         <!-- cei:unclear[@reason] -->
         <xsl:if test="self::cei:unclear[@reason]">
             <xsl:apply-templates select="text() | *" mode="tenor"/>
-            <!-- Test, ob Text an Element klebt -->
+            
+            <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if
-                test="not(starts-with(following-sibling::text()[1], ' ')) and not(ends-with(., ' '))">
-                <xsl:choose>
-                    <xsl:when
-                        test="ends-with(substring-before(following-sibling::text()[1], ' '), ',')">
-                        <xsl:value-of select="substring-before(following-sibling::text()[1], ',')"/>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        <xsl:value-of select="substring-before(following-sibling::text()[1], ' ')"/>
-                    </xsl:otherwise>
-                </xsl:choose>
+                test="not(ends-with(., ' '))">
+                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*=current()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
             </xsl:if>
-            <!-- Test, ob Element an Element klebt -->
-            <xsl:if
-                test="not(starts-with(following-sibling::*[1]/text()[1], ' ')) and not(ends-with(., ' ')) and following-sibling::node()[1][self::element()]">
-                <xsl:choose>
-                    <xsl:when
-                        test="ends-with(substring-before(following-sibling::text()[1], ' '), ',')">
-                        <xsl:value-of select="substring-before(following-sibling::text()[1], ',')"/>
-                    </xsl:when>
-                    <xsl:otherwise>
-                        <xsl:apply-templates select="following-sibling::*[1]" mode="kleber"/>
-                    </xsl:otherwise>
-                </xsl:choose>
-            </xsl:if>
+       
         </xsl:if>
 
         <!-- Fußnoten -->
@@ -1797,13 +1696,76 @@
     </xsl:template>
 
     <!-- Templates Tenor Ausgabe Text von Elementen, die an Fußbnotenelementen kleben -->
+    
+    <!-- text() kleber -->
+    <xsl:template match="text()" mode="kleber">
+      <!--  <fo:inline color="red"><xsl:text>?</xsl:text></fo:inline> -->
+        <xsl:choose>
+            <!-- Der folgende Textknoten hat kein Leerzeichen -->
+            <xsl:when test="not(contains(., ' '))">
+                <xsl:value-of select="."/>
+            </xsl:when>
+            <!-- Dem ersten Leerzeichen geht ein Punkt voran -->
+            <xsl:when test="ends-with(substring-before(., ' '), '.')">
+                <xsl:value-of select="substring-before(., '.')"/>
+            </xsl:when>
+            <!-- Dem ersten Leerzeichen geht ein Komma voran -->
+            <xsl:when test="ends-with(substring-before(., ' '), ',')">
+                <xsl:value-of select="substring-before(., ',')"/>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:value-of select="substring-before(., ' ')"/>
+            </xsl:otherwise>
+        </xsl:choose>
+        
+    </xsl:template>
 
-    <!-- cei:damage[not(attribute())] tenor -->
+    <!-- cei:damage[not(attribute())] kleber -->
     <xsl:template match="cei:damage[not(attribute())]" mode="kleber" priority="-1">
+      <!--  <fo:inline color="red"><xsl:text>!</xsl:text></fo:inline> -->
         <xsl:text>[</xsl:text>
         <xsl:apply-templates select="* | text()" mode="tenor"/>
         <xsl:text>]</xsl:text>
     </xsl:template>
+    
+    <!-- cei:lb (kleber) -->
+    <xsl:template match="cei:lb" mode="kleber" priority="-1">
+       <!-- <fo:inline color="red"><xsl:text>=</xsl:text></fo:inline> -->
+        <xsl:if test="preceding-sibling::text()[1]">
+            <xsl:choose>
+                <!-- beides Textknoten; beide Leerzeichen -->
+                <xsl:when
+                    test="ends-with(preceding::text()[1], ' ') and starts-with(following::text()[1], ' ')">
+                    <xsl:text>|</xsl:text>
+                </xsl:when>
+                <!-- beides Textknoten; erster Leerzeichen, zweiter kein Leerzeichen -->
+                <xsl:when
+                    test="ends-with(preceding::text()[1], ' ') and matches(substring(following::text()[1], 1, 1), '\S')">
+                    <xsl:text>| </xsl:text>
+                </xsl:when>
+                <!-- beides Textknoten; erster kein Leerzeichen, zweiter Leerzeichen -->
+                <xsl:when
+                    test="matches(substring(preceding::text()[1], string-length(preceding::text()[1]), 1), '\S') and starts-with(following::text()[1], ' ')">
+                    <xsl:text> |</xsl:text>
+                </xsl:when>
+                <!-- beides Textknoten; erster kein Leerzeichen, zweiter kein Leerzeichen -->
+                <xsl:when
+                    test="matches(substring(preceding::text()[1], string-length(preceding::text()[1]), 1), '\S') and matches(substring(following::text()[1], 1, 1), '\S')">
+                    <xsl:text>|</xsl:text>
+                </xsl:when>
+                <xsl:otherwise>!!!</xsl:otherwise>
+            </xsl:choose>
+        </xsl:if>
+    </xsl:template>
+
+    <!-- cei:persName kleber -->
+    <xsl:template match="cei:persName" mode="kleber" priority="-1">
+      <!--  <fo:inline color="red"><xsl:text>*</xsl:text></fo:inline> -->
+        <xsl:apply-templates select="* | text()" mode="tenor"/>
+        
+    </xsl:template>
+    
+    
 
 
 </xsl:stylesheet>
