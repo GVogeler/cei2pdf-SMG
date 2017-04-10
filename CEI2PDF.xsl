@@ -7,20 +7,23 @@
     <xsl:output indent="yes"/>
     <xsl:key name="names" match="//*" use="local-name(.)"/>
     
-    <xsl:variable name="CVU" select="'./CVU7-neu4.xml'"/>
-    <xsl:variable name="Test1" select="'./Originale_Copia/10_AA_I_18.xml'"/>
+    <xsl:variable name="CVU" select="'./CVU7-neu5.xml'"/>
+    <xsl:variable name="Test1" select="'./Originale_Copia/10_AA_I_18_neu.xml'"/>
     <xsl:variable name="Test2" select="'./Originale_Copia/3_AA_II_80.xml'"/>
 
     <!-- Leerzeichen aus Elementen rausziehen (löschen und zwischen Elemente schreiben) -->
     <!-- Input Urkunden // XML-Dateien -->
-    <xsl:variable name="newText0"
-        select="replace(unparsed-text($CVU), '([\S]) ((&lt;/[^>]*?>)+)', '$1$2 ')"/>
-    <xsl:variable name="newText"
-        select="parse-xml(replace($newText0, ' (&lt;cei:note.*?&lt;/cei:note>)', '$1 '))"/>
+    <xsl:variable name="intermediate1"
+        select="replace(unparsed-text($Test2), '([\S]) ((&lt;/[^>]*?>)+)', '$1$2 ')"/>
+    <xsl:variable name="intermediate2"
+        select="replace($intermediate1, ' (&lt;cei:note.*?&lt;/cei:note>)', '$1 ')"/>
+    <xsl:variable name="result"
+        select="parse-xml(replace($intermediate2, ' (&lt;cei:handShift.*?/>)', '$1 '))"/>
     
 
     <!-- Wurzelknoten -->
     <xsl:template match="/">
+        <xsl:result-document href="replaced.xml"><xsl:copy-of select="$result"/></xsl:result-document>
         <xsl:call-template name="charter">
             <xsl:with-param name="Funktion1"> </xsl:with-param>
         </xsl:call-template>
@@ -107,7 +110,7 @@
 
                     <!-- Input Urkunden aus Variable -->
 
-                    <xsl:for-each select="$newText//atom:entry">
+                    <xsl:for-each select="$result//atom:entry">
 
                         <!-- Variable für Fußnotenkörper-->
                         <xsl:variable name="footnote">
@@ -1809,8 +1812,18 @@
             
         </xsl:if>
 
-        <!-- !!!cei:handshift[@hand]  -->
-
+        <!-- cei:del[@type] -->
+        <xsl:if test="self::cei:del[@type]">
+            
+            <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
+            <xsl:if
+                test="not(ends-with(., ' '))">
+                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            </xsl:if>
+            
+        </xsl:if>
+        
+        <!-- cei:handshift[@hand]  -->
         <xsl:if test="self::cei:handShift[@hand]">
             
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
@@ -2049,10 +2062,7 @@
     
     <!-- cei:persName (kleber)-->
     <xsl:template match="cei:persName" mode="kleber" priority="-1">
-        <xsl:if
-            test="not(preceding-sibling::node()[1][self::cei:damage][not(ends-with(., ' '))] and not(starts-with(., ' ')))">
             <xsl:apply-templates select="* | text()" mode="tenor"/>
-        </xsl:if>
     </xsl:template>
     
     <!-- cei:pict (kleber) -->
@@ -2082,3 +2092,4 @@
     
 
 </xsl:stylesheet>
+
