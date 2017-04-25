@@ -5,11 +5,28 @@
     version="3.0" id="charter2pdf">
     <xsl:preserve-space elements="*"/>
     <xsl:output indent="yes"/>
-    <xsl:key name="names" match="//*" use="local-name(.)"/>
     
+    
+    <xsl:key name="names" match="//*" use="local-name(.)"/>
+
     <xsl:variable name="CVU" select="'./CVU7-neu5.xml'"/>
     <xsl:variable name="Test1" select="'./Originale_Copia/10_AA_I_18_neu.xml'"/>
     <xsl:variable name="Test2" select="'./Originale_Copia/3_AA_II_80.xml'"/>
+    
+    
+    
+    <xsl:function name="cei:prepare">
+        <xsl:param name="input"/>
+        <xsl:value-of select="replace(replace($input,'&quot;', '”'),'”(\w)','“$1')"/>
+            <!--<xsl:value-of select="replace(replace($input,'(\S)&quot;', '$1”'),
+                '&quot;(\S)', '“$1')"/>-->
+       
+    </xsl:function>
+   
+    
+    
+    
+    
 
     <!-- Leerzeichen aus Elementen rausziehen (löschen und zwischen Elemente schreiben) -->
     <!-- Input Urkunden // XML-Dateien -->
@@ -20,10 +37,14 @@
     <xsl:variable name="result"
         select="parse-xml(replace($intermediate2, ' (&lt;cei:handShift.*?/>)', '$1 '))"/>
     
+    
+
 
     <!-- Wurzelknoten -->
     <xsl:template match="/">
-        <xsl:result-document href="replaced.xml"><xsl:copy-of select="$result"/></xsl:result-document>
+       <!-- <xsl:result-document href="replaced1.xml">
+            <xsl:copy-of select="$result"/>
+        </xsl:result-document>-->
         <xsl:call-template name="charter">
             <xsl:with-param name="Funktion1"> </xsl:with-param>
         </xsl:call-template>
@@ -849,11 +870,23 @@
                         select="//cei:witListPar/cei:witness[not(position() = 1)][cei:traditioForm[text()]]">
                         <xsl:value-of select=".//cei:traditioForm"/>
                         <xsl:text>, </xsl:text>
-                        <xsl:value-of select=".//cei:repository"/>
-                        <xsl:text> </xsl:text>
-                        <xsl:value-of select=".//cei:idno"/>
-                        <xsl:text> </xsl:text>
-                        <xsl:value-of select="concat('[', ./@n, ']')"/>
+                        <!-- <cei:arch -->
+                        <xsl:if test="//cei:arch/text()">
+                            <xsl:value-of
+                                select="normalize-space(cei:archIdentifier/cei:arch/text())"/>
+                            <xsl:text> </xsl:text>
+                        </xsl:if>
+                        <!-- <cei:idno> -->
+                        <xsl:if test="//cei:idno/text()">
+                            <xsl:value-of
+                                select="normalize-space(cei:archIdentifier/cei:idno/text())"/>
+                        </xsl:if>
+                        <xsl:if test=".[@n]">
+                            <xsl:value-of select="concat(' [', @n, ']')"/>
+                        </xsl:if>
+                        <xsl:if test="cei:archIdentifier/text()[preceding-sibling::cei:idno]">
+                            <xsl:value-of select="concat(' ',cei:archIdentifier/text()[last()])"/>
+                        </xsl:if>
                     </xsl:for-each>
                     <xsl:text>. </xsl:text>
                 </xsl:if>
@@ -939,10 +972,8 @@
     <xsl:template name="link">
         <fo:block text-indent="10mm" text-align="justify" font-size="10pt">
             <xsl:text>Edizione digitale dei documenti dell'abbazia di S. Maria della Grotta presso Benevento (1200- 1250), n. ## (</xsl:text>
-            <fo:inline color="blue"><xsl:text>http://monasterium.net/mom/SMG1200-1250/SMG', '_##', '/charter</xsl:text></fo:inline>
-            <xsl:value-of
-                select="concat(')', '')"
-            />
+                <xsl:text>http://monasterium.net/mom/SMG1200-1250/SMG', '_##', '/charter</xsl:text>
+            <xsl:value-of select="concat(')', '')"/>
         </fo:block>
 
     </xsl:template>
@@ -1121,52 +1152,75 @@
                     
                     )
                     ">
+                
                 <xsl:choose>
-                    <xsl:when test="ends-with(substring-before(., ' '), ',')">
-                        <xsl:text>, </xsl:text>
-                        <xsl:value-of select="substring-after(., ' ')"/>
+                    <!-- Der Textknoten hat ein Leerzeichen -->
+                    <xsl:when test="contains(., ' ')">
+                        <xsl:choose>
+                            <xsl:when test="ends-with(substring-before(cei:prepare(.), ' '), ',')">
+                                <xsl:text>, </xsl:text>
+                                <xsl:value-of select="substring-after(cei:prepare(.), ' ')"/>
+                            </xsl:when>
+                            <xsl:when test="ends-with(substring-before(cei:prepare(.), ' '), '.')">
+                                <xsl:text>. </xsl:text>
+                                <xsl:value-of select="substring-after(cei:prepare(.), ' ')"/>
+                            </xsl:when>
+                            <xsl:when test="ends-with(substring-before(cei:prepare(.), ' '), ':')">
+                                <xsl:text>: </xsl:text>
+                                <xsl:value-of select="substring-after(cei:prepare(.), ' ')"/>
+                            </xsl:when>
+                            <xsl:when test="ends-with(substring-before(cei:prepare(.), ' '), ';')">
+                                <xsl:text>; </xsl:text>
+                                <xsl:value-of select="substring-after(cei:prepare(.), ' ')"/>
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <xsl:text> </xsl:text>
+                                <xsl:value-of select="substring-after(cei:prepare(.), ' ')"/>
+                            </xsl:otherwise>
+                        </xsl:choose>
                     </xsl:when>
-                    <xsl:when test="ends-with(substring-before(., ' '), '.')">
-                        <xsl:text>. </xsl:text>
-                        <xsl:value-of select="substring-after(., ' ')"/>
-                    </xsl:when>
-                    <xsl:when test="ends-with(substring-before(., ' '), ':')">
-                        <xsl:text>: </xsl:text>
-                        <xsl:value-of select="substring-after(., ' ')"/>
-                    </xsl:when>
-                    <xsl:when test="ends-with(substring-before(., ' '), ';')">
-                        <xsl:text>; </xsl:text>
-                        <xsl:value-of select="substring-after(., ' ')"/>
-                    </xsl:when>
-                    <xsl:when test=". = '.' or . = ',' or . = ':' or . = ';'">
-                        <xsl:value-of select="."/>
+                    <!-- Der Textknoten hat kein Leerzeichen -->
+                    <xsl:when test="not(contains(.,' '))">
+                        <xsl:choose>
+                            <xsl:when test="ends-with(.,',')">
+                                <xsl:text>,</xsl:text>
+                            </xsl:when>
+                            <xsl:when test="ends-with(., '.')">
+                                <xsl:text>.</xsl:text>
+                            </xsl:when>
+                            <xsl:when test="ends-with(., ':')">
+                                <xsl:text>:</xsl:text>
+                            </xsl:when>
+                            <xsl:when test="ends-with(., ';')">
+                                <xsl:text>;</xsl:text>
+                            </xsl:when>
+                        </xsl:choose>
                     </xsl:when>
                     <xsl:otherwise>
                         <xsl:choose>
                             <!-- Ausgabe Textknoten, die Teil eines Zitates (cei:quote) sind -->
                             <xsl:when test="ancestor::cei:quote">
                                 <xsl:text xml:space="preserve"> </xsl:text>
-                                <xsl:value-of select="substring-after(., ' ')"/>
+                              <xsl:value-of select="substring-after(cei:prepare(.), ' ')"/>
                             </xsl:when>
-                            <xsl:otherwise>
-                                <xsl:value-of select="concat(' ', substring-after(., ' '))"/>
-                            </xsl:otherwise>
                         </xsl:choose>
-
                     </xsl:otherwise>
                 </xsl:choose>
             </xsl:when>
 
             <!-- Ausgabe Textknoten, die nicht an Fußnotenelement kleben -->
             <xsl:otherwise>
+                
+                
                 <xsl:choose>
+                    
                     <!-- Ausgabe Textknoten, die Teil eines Zitates (cei:quote) sind -->
                     <xsl:when test="starts-with(., ' ') and ancestor::cei:quote">
                         <xsl:text xml:space="preserve"> </xsl:text>
-                        <xsl:value-of select="substring-after(., ' ')"/>
+                        <xsl:value-of select="substring-after(cei:prepare(.),' ')"/>
                     </xsl:when>
                     <xsl:otherwise>
-                        <xsl:value-of select="."/>
+                        <xsl:value-of select="cei:prepare(.)"/>
                     </xsl:otherwise>
                 </xsl:choose>
             </xsl:otherwise>
@@ -1182,25 +1236,25 @@
     <xsl:template match="cei:cit" mode="tenor" priority="-1">
         <xsl:if
             test="
-            not(preceding-sibling::node()[
-            self::cei:note[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:c[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:del[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:space[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]
-            ])">
-        <xsl:apply-templates select="* | text()" mode="tenor"/>
+                not(preceding-sibling::node()[
+                self::cei:note[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:c[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:del[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:space[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]
+                ])">
+            <xsl:apply-templates select="* | text()" mode="tenor"/>
         </xsl:if>
     </xsl:template>
 
@@ -1209,24 +1263,24 @@
         <xsl:if
             test="
                 not(preceding-sibling::node()[
-                self::cei:note[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-                self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-                self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-                self::cei:add[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-                self::cei:c[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-                self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-                self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-                self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-                self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-                self::cei:del[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-                self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-                self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-                self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-                self::cei:space[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-                self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-                self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]
+                self::cei:note[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:c[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:del[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:space[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]
                 ])">
-           <xsl:text>[</xsl:text>
+            <xsl:text>[</xsl:text>
             <xsl:apply-templates select="* | text()" mode="tenor"/>
             <xsl:text>]</xsl:text>
         </xsl:if>
@@ -1236,40 +1290,40 @@
     <xsl:template match="cei:expan" mode="tenor" priority="-1">
         <xsl:if
             test="
-            not(preceding-sibling::node()[
-            self::cei:note[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:c[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:del[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:space[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]
-            ])">
-        <xsl:choose>
-            <xsl:when test="contains(./text()[1], 'Iesu')">
-                <xsl:apply-templates select="* | text()" mode="tenor"/>
-                <xsl:if test="ends-with(./text()[last()], ' ')">
-                    <xsl:text> </xsl:text>
-                </xsl:if>
-            </xsl:when>
-            <xsl:otherwise>
-                <xsl:text>(</xsl:text>
-                <xsl:apply-templates select="* | text()" mode="tenor"/>
-                <xsl:text>)</xsl:text>
-                <xsl:if test="ends-with(./text()[last()], ' ')">
-                    <xsl:text> </xsl:text>
-                </xsl:if>
-            </xsl:otherwise>
-        </xsl:choose>
+                not(preceding-sibling::node()[
+                self::cei:note[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:c[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:del[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:space[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]
+                ])">
+            <xsl:choose>
+                <xsl:when test="contains(./text()[1], 'Iesu')">
+                    <xsl:apply-templates select="* | text()" mode="tenor"/>
+                    <xsl:if test="ends-with(./text()[last()], ' ')">
+                        <xsl:text> </xsl:text>
+                    </xsl:if>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:text>(</xsl:text>
+                    <xsl:apply-templates select="* | text()" mode="tenor"/>
+                    <xsl:text>)</xsl:text>
+                    <xsl:if test="ends-with(./text()[last()], ' ')">
+                        <xsl:text> </xsl:text>
+                    </xsl:if>
+                </xsl:otherwise>
+            </xsl:choose>
         </xsl:if>
     </xsl:template>
 
@@ -1277,25 +1331,25 @@
     <xsl:template match="cei:foreign" mode="tenor" priority="-1">
         <xsl:if
             test="
-            not(preceding-sibling::node()[
-            self::cei:note[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:c[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:del[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:space[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]
-            ])">
-        <xsl:apply-templates select="* | text()" mode="tenor"/>
+                not(preceding-sibling::node()[
+                self::cei:note[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:c[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:del[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:space[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]
+                ])">
+            <xsl:apply-templates select="* | text()" mode="tenor"/>
         </xsl:if>
     </xsl:template>
 
@@ -1303,25 +1357,25 @@
     <xsl:template match="cei:hi[not(attribute())]" mode="tenor" priority="-1">
         <xsl:if
             test="
-            not(preceding-sibling::node()[
-            self::cei:note[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:c[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:del[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:space[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]
-            ])">
-        <xsl:apply-templates select="* | text()" mode="tenor"/>
+                not(preceding-sibling::node()[
+                self::cei:note[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:c[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:del[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:space[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]
+                ])">
+            <xsl:apply-templates select="* | text()" mode="tenor"/>
         </xsl:if>
     </xsl:template>
 
@@ -1331,25 +1385,25 @@
         mode="tenor" priority="-2">
         <xsl:if
             test="
-            not(preceding-sibling::node()[
-            self::cei:note[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:c[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:del[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:space[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]
-            ])">
-        <xsl:apply-templates select="text() | *" mode="sc"> </xsl:apply-templates>
+                not(preceding-sibling::node()[
+                self::cei:note[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:c[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:del[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:space[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]
+                ])">
+            <xsl:apply-templates select="text() | *" mode="sc"> </xsl:apply-templates>
         </xsl:if>
     </xsl:template>
 
@@ -1359,25 +1413,25 @@
         mode="tenor" priority="-2">
         <xsl:if
             test="
-            not(preceding-sibling::node()[
-            self::cei:note[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:c[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:del[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:space[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]
-            ])">
-        <xsl:apply-templates select="text() | *" mode="tenor"> </xsl:apply-templates>
+                not(preceding-sibling::node()[
+                self::cei:note[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:c[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:del[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:space[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]
+                ])">
+            <xsl:apply-templates select="text() | *" mode="tenor"> </xsl:apply-templates>
         </xsl:if>
     </xsl:template>
 
@@ -1385,68 +1439,71 @@
     <xsl:template match="cei:index" mode="tenor" priority="-1">
         <xsl:if
             test="
-            not(preceding-sibling::node()[
-            self::cei:note[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:c[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:del[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:space[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]
-            ])">
-        <xsl:apply-templates select="* | text()" mode="tenor"/>
+                not(preceding-sibling::node()[
+                self::cei:note[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:c[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:del[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:space[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]
+                ])">
+            <xsl:apply-templates select="* | text()" mode="tenor"/>
         </xsl:if>
     </xsl:template>
 
     <!-- cei:lb (tenor) -->
     <xsl:template match="cei:lb" mode="tenor" priority="-1">
-        <xsl:if test="preceding-sibling::text()[1] and not(preceding-sibling::node()[
-            self::cei:note[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:c[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:del[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:space[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]
-            ])">
+        <xsl:if
+            test="
+                preceding-sibling::text()[1] and not(preceding-sibling::node()[
+                self::cei:note[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:c[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:del[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:space[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]
+                ])">
             <xsl:choose>
-                <xsl:when test="preceding-sibling::node()[1][
-                    self::cei:note or
-                    self::cei:quote[ancestor::cei:cit] or
-                    self::cei:add[@hand] or
-                    self::cei:add[@type] or
-                    self::cei:c[@type] or
-                    self::cei:corr[@sic and @type] or
-                    self::cei:corr[@sic and not(@type)] or
-                    self::cei:corr[not(@sic) and @type] or
-                    self::cei:damage[attribute()] or
-                    self::cei:del[@type] or
-                    self::cei:handShift[@hand] or
-                    self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))] or
-                    self::cei:sic[@corr or not(attribute())] or
-                    self::cei:space or
-                    self::cei:supplied[@type] or
-                    self::cei:unclear[@reason]
-                    ][not(ends-with(text()[1],' '))]">                      
-                    </xsl:when>
+                <xsl:when
+                    test="
+                        preceding-sibling::node()[1][
+                        self::cei:note or
+                        self::cei:quote[ancestor::cei:cit] or
+                        self::cei:add[@hand] or
+                        self::cei:add[@type] or
+                        self::cei:c[@type] or
+                        self::cei:corr[@sic and @type] or
+                        self::cei:corr[@sic and not(@type)] or
+                        self::cei:corr[not(@sic) and @type] or
+                        self::cei:damage[attribute()] or
+                        self::cei:del[@type] or
+                        self::cei:handShift[@hand] or
+                        self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))] or
+                        self::cei:sic[@corr or not(attribute())] or
+                        self::cei:space or
+                        self::cei:supplied[@type] or
+                        self::cei:unclear[@reason]
+                        ][not(ends-with(text()[1], ' '))]"> </xsl:when>
                 <xsl:otherwise>
                     <xsl:choose>
                         <!-- beides Textknoten; beide Leerzeichen -->
@@ -1472,7 +1529,8 @@
                         <xsl:otherwise>!!!</xsl:otherwise>
                     </xsl:choose>
                 </xsl:otherwise>
-            </xsl:choose></xsl:if>
+            </xsl:choose>
+        </xsl:if>
 
     </xsl:template>
 
@@ -1480,24 +1538,24 @@
     <xsl:template match="cei:persName" mode="tenor" priority="-1">
         <xsl:if
             test="
-            not(preceding-sibling::node()[
-            self::cei:note[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:c[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:del[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:space[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]
-            ])">
+                not(preceding-sibling::node()[
+                self::cei:note[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:c[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:del[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:space[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]
+                ])">
             <xsl:apply-templates select="* | text()" mode="tenor"/>
         </xsl:if>
     </xsl:template>
@@ -1506,38 +1564,38 @@
     <xsl:template match="cei:pict" mode="tenor" priority="-1">
         <xsl:if
             test="
-            not(preceding-sibling::node()[
-            self::cei:note[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:c[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:del[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:space[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]
-            ])">
-        <xsl:if
-            test="not(.[@type = 'signum crucis']/ancestor::cei:damage) and .[@type = 'signum crucis']">
-            <xsl:text> + </xsl:text>
-        </xsl:if>
-        <xsl:if test=".[@type = 'signum crucis']/ancestor::cei:damage">
-            <xsl:text>+</xsl:text>
-        </xsl:if>
-        <xsl:if
-            test=".[@type = 'signum notarii' or @type = 'signum iudicis' or @type = 'signum testis' or @type = 'signum auctoris']">
-            <xsl:text> (S) </xsl:text>
-        </xsl:if>
-        <xsl:if test=".[@type = 'monogramma']">
-            <xsl:text> (M) </xsl:text>
-        </xsl:if>
+                not(preceding-sibling::node()[
+                self::cei:note[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:c[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:del[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:space[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]
+                ])">
+            <xsl:if
+                test="not(.[@type = 'signum crucis']/ancestor::cei:damage) and .[@type = 'signum crucis']">
+                <xsl:text> + </xsl:text>
+            </xsl:if>
+            <xsl:if test=".[@type = 'signum crucis']/ancestor::cei:damage">
+                <xsl:text>+</xsl:text>
+            </xsl:if>
+            <xsl:if
+                test=".[@type = 'signum notarii' or @type = 'signum iudicis' or @type = 'signum testis' or @type = 'signum auctoris']">
+                <xsl:text> (S) </xsl:text>
+            </xsl:if>
+            <xsl:if test=".[@type = 'monogramma']">
+                <xsl:text> (M) </xsl:text>
+            </xsl:if>
         </xsl:if>
     </xsl:template>
 
@@ -1545,27 +1603,27 @@
     <xsl:template match="cei:quote[not(ancestor::cei:cit)]" mode="tenor" priority="-1">
         <xsl:if
             test="
-            not(preceding-sibling::node()[
-            self::cei:note[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:add[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:c[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:del[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:space[not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] or
-            self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]
-            ])">
-        <fo:inline font-style="italic">
-            <xsl:apply-templates select="* | text()" mode="tenor"/>
-        </fo:inline>
+                not(preceding-sibling::node()[
+                self::cei:note[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:quote[ancestor::cei:cit][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:add[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:c[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[@sic and not(@type)][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:corr[not(@sic) and @type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:damage[attribute()][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:del[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:handShift[@hand][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:sic[@corr or not(attribute())][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:space[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
+                self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]
+                ])">
+            <xsl:text>&#x200D;</xsl:text> <fo:inline font-style="italic"><xsl:text>&#x200D;</xsl:text>
+                <xsl:apply-templates select="* | text()" mode="tenor"/><xsl:text>&#x200D;</xsl:text>
+            </fo:inline><xsl:text>&#x200D;</xsl:text>
         </xsl:if>
     </xsl:template>
 
@@ -1575,12 +1633,12 @@
     <xsl:template match="text()" mode="sc" priority="-1">
         <xsl:analyze-string select="." regex="[A-Z]">
             <xsl:matching-substring>
-                <xsl:value-of select="."/>
+                <xsl:value-of select="cei:prepare(.)"/>
             </xsl:matching-substring>
             <xsl:non-matching-substring>
                 <xsl:text>&#x200D;</xsl:text>
                 <fo:inline font-style="normal" font-size="75%">
-                    <xsl:value-of select="upper-case(.)"/>
+                    <xsl:value-of select="upper-case(cei:prepare(.))"/>
                 </fo:inline>
                 <xsl:text>&#x200D;</xsl:text>
             </xsl:non-matching-substring>
@@ -1593,13 +1651,13 @@
             <xsl:when test="contains(./text()[1], 'Iesu')">
                 <xsl:analyze-string select="." regex="[A-Z]">
                     <xsl:matching-substring>
-                        <xsl:value-of select="."/>
+                        <xsl:value-of select="cei:prepare(.)"/>
                     </xsl:matching-substring>
                     <xsl:non-matching-substring>
                         <xsl:text>&#x200D;</xsl:text>
                         <fo:inline font-style="normal" font-size="75%">
                             <xsl:text/>
-                            <xsl:value-of select="upper-case(.)"/>
+                            <xsl:value-of select="upper-case(cei:prepare(.))"/>
                             <xsl:text/>
                         </fo:inline>
                         <xsl:text>&#x200D;</xsl:text>
@@ -1610,13 +1668,13 @@
                 <xsl:text>(</xsl:text>
                 <xsl:analyze-string select="." regex="[A-Z]">
                     <xsl:matching-substring>
-                        <xsl:value-of select="."/>
+                        <xsl:value-of select="cei:prepare(.)"/>
                     </xsl:matching-substring>
                     <xsl:non-matching-substring>
                         <xsl:text>&#x200D;</xsl:text>
                         <fo:inline font-style="normal" font-size="75%">
                             <xsl:text/>
-                            <xsl:value-of select="upper-case(.)"/>
+                            <xsl:value-of select="upper-case(cei:prepare(.))"/>
                             <xsl:text/>
                         </fo:inline>
                         <xsl:text>&#x200D;</xsl:text>
@@ -1661,13 +1719,14 @@
         <xsl:if test="self::cei:quote">
             <fo:inline font-style="italic">
                 <xsl:apply-templates select="* | text()" mode="tenor"/>
-                
+
                 <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
-                <xsl:if
-                    test="not(ends-with(., ' '))">
-                    <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*=current()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+                <xsl:if test="not(ends-with(., ' '))">
+                    <xsl:apply-templates
+                        select="following-sibling::*[not(preceding::text()[preceding-sibling::* = current()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                        mode="kleber"/>
                 </xsl:if>
-                
+
                 <fo:footnote>
                     <fo:inline baseline-shift="super" font-size="8pt" font-style="normal">
                         <xsl:number
@@ -1704,13 +1763,14 @@
         <!-- cei:add[@hand] -->
         <xsl:if test="self::cei:add[@hand]">
             <xsl:apply-templates select="* | text()" mode="tenor"/>
-            
+
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
-            <xsl:if
-                test="not(ends-with(., ' '))">
-                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            <xsl:if test="not(ends-with(., ' '))">
+                <xsl:apply-templates
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    mode="kleber"/>
             </xsl:if>
-            
+
         </xsl:if>
 
         <!-- cei:add[@type and not(@hand)] -->
@@ -1718,9 +1778,10 @@
             <xsl:apply-templates select="* | text()" mode="tenor"/>
 
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
-            <xsl:if
-                test="not(ends-with(., ' '))">
-                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            <xsl:if test="not(ends-with(., ' '))">
+                <xsl:apply-templates
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    mode="kleber"/>
             </xsl:if>
 
         </xsl:if>
@@ -1730,11 +1791,12 @@
             <xsl:apply-templates select="* | text()" mode="tenor"/>
 
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
-            <xsl:if
-                test="not(ends-with(., ' '))">
-                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            <xsl:if test="not(ends-with(., ' '))">
+                <xsl:apply-templates
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    mode="kleber"/>
             </xsl:if>
-            
+
         </xsl:if>
 
         <!-- cei:corr[@sic and @type] -->
@@ -1742,11 +1804,12 @@
             <xsl:apply-templates select="* | text()" mode="tenor"/>
 
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
-            <xsl:if
-                test="not(ends-with(., ' '))">
-                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            <xsl:if test="not(ends-with(., ' '))">
+                <xsl:apply-templates
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    mode="kleber"/>
             </xsl:if>
-            
+
         </xsl:if>
 
         <!-- cei:corr[@sic and not(@type)] -->
@@ -1754,11 +1817,12 @@
             <xsl:apply-templates select="* | text()" mode="tenor"/>
 
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
-            <xsl:if
-                test="not(ends-with(., ' '))">
-                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            <xsl:if test="not(ends-with(., ' '))">
+                <xsl:apply-templates
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    mode="kleber"/>
             </xsl:if>
-            
+
         </xsl:if>
 
         <!-- cei:corr[not(@sic) and @type] -->
@@ -1766,158 +1830,171 @@
             <xsl:apply-templates select="* | text()" mode="tenor"/>
 
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
-            <xsl:if
-                test="not(ends-with(., ' '))">
-                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            <xsl:if test="not(ends-with(., ' '))">
+                <xsl:apply-templates
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    mode="kleber"/>
             </xsl:if>
-            
+
         </xsl:if>
 
         <!-- cei:damage[@agent and @extent] tenor -->
         <xsl:if test="self::cei:damage[@agent and @extent]">
             <xsl:text>[...]</xsl:text>
-            
+
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
-            <xsl:if
-                test="not(ends-with(., ' '))">
-                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            <xsl:if test="not(ends-with(., ' '))">
+                <xsl:apply-templates
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    mode="kleber"/>
             </xsl:if>
-            
+
         </xsl:if>
 
         <!-- cei:damage[@agent and not(@extent)] -->
         <xsl:if test="self::cei:damage[@agent and not(@extent)]">
-            
+
             <xsl:text>[</xsl:text>
             <xsl:apply-templates select="text() | *" mode="tenor"/>
             <xsl:text>]</xsl:text>
 
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
-            <xsl:if
-                test="not(ends-with(., ' '))">
-                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            <xsl:if test="not(ends-with(., ' '))">
+                <xsl:apply-templates
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    mode="kleber"/>
             </xsl:if>
-            
+
         </xsl:if>
 
         <!-- cei:damage [not(@agent) and @extent] -->
         <xsl:if test="self::cei:damage[not(@agent) and @extent]">
             <xsl:text>[...]</xsl:text>
-            
+
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
-            <xsl:if
-                test="not(ends-with(., ' '))">
-                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            <xsl:if test="not(ends-with(., ' '))">
+                <xsl:apply-templates
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    mode="kleber"/>
             </xsl:if>
-            
+
         </xsl:if>
 
         <!-- cei:del[@type] -->
         <xsl:if test="self::cei:del[@type]">
-            
+
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
-            <xsl:if
-                test="not(ends-with(., ' '))">
-                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            <xsl:if test="not(ends-with(., ' '))">
+                <xsl:apply-templates
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    mode="kleber"/>
             </xsl:if>
-            
+
         </xsl:if>
-        
+
         <!-- cei:handshift[@hand]  -->
         <xsl:if test="self::cei:handShift[@hand]">
-            
+
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
-            <xsl:if
-                test="not(ends-with(., ' '))">
-                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            <xsl:if test="not(ends-with(., ' '))">
+                <xsl:apply-templates
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    mode="kleber"/>
             </xsl:if>
-            
+
         </xsl:if>
 
         <!-- cei:hi[contains(@rend,'monogrammat') or contains(@rend,'maiusc') or contains(@rend,'elongat') or contains(@rend,'capital') or contains(@rend,'oncia')] -->
         <xsl:if
             test="self::cei:hi[contains(@rend, 'monogrammat') or contains(@rend, 'maiusc') or contains(@rend, 'elongat') or contains(@rend, 'capital') or contains(@rend, 'oncia')]">
             <xsl:apply-templates select="text() | *" mode="sc"> </xsl:apply-templates>
-            
+
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
-            <xsl:if
-                test="not(ends-with(., ' '))">
-                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            <xsl:if test="not(ends-with(., ' '))">
+                <xsl:apply-templates
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    mode="kleber"/>
             </xsl:if>
-            
+
         </xsl:if>
 
         <!-- cei:hi[not(contains(@rend,'monogrammat') or contains(@rend,'maiusc') or contains(@rend,'elongat') or contains(@rend,'capital') or contains(@rend,'oncia'))] -->
         <xsl:if
             test="self::cei:hi[not(contains(@rend, 'monogrammat') or contains(@rend, 'maiusc') or contains(@rend, 'elongat') or contains(@rend, 'capital') or contains(@rend, 'oncia'))]">
             <xsl:apply-templates select="text() | *" mode="tenor"> </xsl:apply-templates>
-            
+
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
-            <xsl:if
-                test="not(ends-with(., ' '))">
-                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            <xsl:if test="not(ends-with(., ' '))">
+                <xsl:apply-templates
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    mode="kleber"/>
             </xsl:if>
-            
+
         </xsl:if>
 
         <!-- cei:sic[@corr] -->
         <xsl:if test="self::cei:sic[@corr]">
             <xsl:apply-templates select="* | text()" mode="tenor"/>
-            
+
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
-            <xsl:if
-                test="not(ends-with(., ' '))">
-                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            <xsl:if test="not(ends-with(., ' '))">
+                <xsl:apply-templates
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    mode="kleber"/>
             </xsl:if>
-            
+
         </xsl:if>
 
         <!-- cei:sic[not(attribute())] tenor -->
         <xsl:if test="self::cei:sic[not(attribute())]">
             <xsl:apply-templates select="* | text()" mode="tenor"/>
-            
+
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
-            <xsl:if
-                test="not(ends-with(., ' '))">
-                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            <xsl:if test="not(ends-with(., ' '))">
+                <xsl:apply-templates
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    mode="kleber"/>
             </xsl:if>
-            
+
         </xsl:if>
 
         <!-- cei:space -->
         <xsl:if test="self::cei:space">
             <xsl:text>***</xsl:text>
-            
+
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
-            <xsl:if
-                test="not(ends-with(., ' '))">
-                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            <xsl:if test="not(ends-with(., ' '))">
+                <xsl:apply-templates
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    mode="kleber"/>
             </xsl:if>
-            
+
         </xsl:if>
 
         <!-- cei:supplied[@type] -->
         <xsl:if test="self::cei:supplied[@type]">
-                    <xsl:apply-templates select="text() | *" mode="tenor"/>
+            <xsl:apply-templates select="text() | *" mode="tenor"/>
 
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
-            <xsl:if
-                test="not(ends-with(., ' '))">
-                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            <xsl:if test="not(ends-with(., ' '))">
+                <xsl:apply-templates
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    mode="kleber"/>
             </xsl:if>
-            
+
         </xsl:if>
 
         <!-- cei:unclear[@reason] -->
         <xsl:if test="self::cei:unclear[@reason]">
             <xsl:apply-templates select="text() | *" mode="tenor"/>
-            
+
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
-            <xsl:if
-                test="not(ends-with(., ' '))">
-                <xsl:apply-templates select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])] | following-sibling::text()[not(matches(substring(.,1,1),'[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id()=current()/generate-id()][contains(.,' ')])]" mode="kleber"/>
+            <xsl:if test="not(ends-with(., ' '))">
+                <xsl:apply-templates
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    mode="kleber"/>
             </xsl:if>
-       
+
         </xsl:if>
 
         <!-- Fußnoten -->
@@ -1942,45 +2019,57 @@
     </xsl:template>
 
     <!-- Templates Tenor Ausgabe Text von Elementen, die an Fußbnotenelementen kleben -->
-    
+
     <!-- text() kleber -->
     <xsl:template match="text()" mode="kleber">
-      <!--  <fo:inline color="red"><xsl:text>?</xsl:text></fo:inline> -->
+        <!--  <fo:inline color="red"><xsl:text>?</xsl:text></fo:inline> -->
         <xsl:choose>
             <!-- Der folgende Textknoten hat kein Leerzeichen -->
             <xsl:when test="not(contains(., ' '))">
-                <xsl:value-of select="."/>
+                <xsl:choose>
+                    <!-- Der Textknoten endet mit Punkt -->
+                    <xsl:when test="ends-with(., '.')">
+                        <xsl:value-of select="substring-before(cei:prepare(.), '.')"/>
+                    </xsl:when>
+                    <!-- Der Textknoten endet mit Komma -->
+                    <xsl:when test="ends-with(., ',')">
+                        <xsl:value-of select="substring-before(cei:prepare(.), ',')"/>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:value-of select="."/>
+                    </xsl:otherwise>
+                </xsl:choose>
             </xsl:when>
             <!-- Dem ersten Leerzeichen geht ein Punkt voran -->
             <xsl:when test="ends-with(substring-before(., ' '), '.')">
-                <xsl:value-of select="substring-before(., '.')"/>
+                <xsl:value-of select="substring-before(cei:prepare(.), '.')"/>
             </xsl:when>
             <!-- Dem ersten Leerzeichen geht ein Komma voran -->
             <xsl:when test="ends-with(substring-before(., ' '), ',')">
-                <xsl:value-of select="substring-before(., ',')"/>
+                <xsl:value-of select="substring-before(cei:prepare(.), ',')"/>
             </xsl:when>
             <xsl:otherwise>
-                <xsl:value-of select="substring-before(., ' ')"/>
+                <xsl:value-of select="substring-before(cei:prepare(.) , ' ')"/>
             </xsl:otherwise>
         </xsl:choose>
-        
+
     </xsl:template>
 
     <!-- cei:bibl (kleber) -->
     <xsl:template match="cei:bibl" mode="kleber" priority="-1"/>
-    
+
     <!-- cei:cit (kleber) -->
     <xsl:template match="cei:cit" mode="kleber" priority="-1">
         <xsl:apply-templates select="* | text()" mode="tenor"/>
     </xsl:template>
-    
+
     <!-- cei:damage[not(attribute())] (kleber) -->
     <xsl:template match="cei:damage[not(attribute())]" mode="kleber" priority="-1">
         <xsl:text>[</xsl:text>
         <xsl:apply-templates select="* | text()" mode="tenor"/>
         <xsl:text>]</xsl:text>
     </xsl:template>
-    
+
     <!-- cei:expan (kleber) -->
     <xsl:template match="cei:expan" mode="kleber" priority="-1">
         <xsl:choose>
@@ -2000,39 +2089,39 @@
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
-    
+
     <!-- cei:foreign (kleber) -->
     <xsl:template match="cei:foreign" mode="kleber" priority="-1">
         <xsl:apply-templates select="* | text()" mode="tenor"/>
     </xsl:template>
-    
+
     <!-- cei:hi not(attribute())] (kleber) -->
     <xsl:template match="cei:hi[not(attribute())]" mode="kleber" priority="-1">
         <xsl:apply-templates select="* | text()" mode="tenor"/>
     </xsl:template>
-    
+
     <!-- cei<:hi[contains(@rend,'monogrammat') or contains(@rend,'maiusc') or contains(@rend,'elongat') or contains(@rend,'capital') or contains(@rend,'oncia')] (kleber) -->
     <xsl:template
         match="cei:hi[contains(@rend, 'monogrammat') or contains(@rend, 'maiusc') or contains(@rend, 'elongat') or contains(@rend, 'capital') or contains(@rend, 'oncia')]"
         mode="kleber" priority="-2">
         <xsl:apply-templates select="text() | *" mode="sc"> </xsl:apply-templates>
     </xsl:template>
-    
+
     <!-- cei:hi[not(contains(@rend,'monogrammat') or contains(@rend,'maiusc') or contains(@rend,'elongat') or contains(@rend,'capital') or contains(@rend,'oncia'))] (kleber) -->
     <xsl:template
         match="cei:hi[not(contains(@rend, 'monogrammat') or contains(@rend, 'maiusc') or contains(@rend, 'elongat') or contains(@rend, 'capital') or contains(@rend, 'oncia'))]"
         mode="kleber" priority="-2">
         <xsl:apply-templates select="text() | *" mode="tenor"> </xsl:apply-templates>
     </xsl:template>
-    
+
     <!-- cei:index (kleber) -->
     <xsl:template match="cei:index" mode="kleber" priority="-1">
         <xsl:apply-templates select="* | text()" mode="tenor"/>
     </xsl:template>
-    
+
     <!-- cei:lb (kleber) -->
     <xsl:template match="cei:lb" mode="kleber" priority="-1">
-       <!-- <fo:inline color="red"><xsl:text>=</xsl:text></fo:inline> -->
+        <!-- <fo:inline color="red"><xsl:text>=</xsl:text></fo:inline> -->
         <xsl:if test="preceding-sibling::text()[1]">
             <xsl:choose>
                 <!-- beides Textknoten; beide Leerzeichen -->
@@ -2059,12 +2148,12 @@
             </xsl:choose>
         </xsl:if>
     </xsl:template>
-    
+
     <!-- cei:persName (kleber)-->
     <xsl:template match="cei:persName" mode="kleber" priority="-1">
-            <xsl:apply-templates select="* | text()" mode="tenor"/>
+        <xsl:apply-templates select="* | text()" mode="tenor"/>
     </xsl:template>
-    
+
     <!-- cei:pict (kleber) -->
     <xsl:template match="cei:pict" mode="kleber" priority="-1">
         <xsl:if
@@ -2082,7 +2171,7 @@
             <xsl:text> (M) </xsl:text>
         </xsl:if>
     </xsl:template>
-    
+
     <!-- cei:quote[not(ancestor::cei:cit)] (kleber) -->
     <xsl:template match="cei:quote[not(ancestor::cei:cit)]" mode="kleber" priority="-1">
         <fo:inline font-style="italic">
@@ -2090,6 +2179,6 @@
         </fo:inline>
     </xsl:template>
     
+   
 
 </xsl:stylesheet>
-
