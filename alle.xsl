@@ -10,12 +10,6 @@
     <xsl:key name="names" match="//*" use="local-name(.)"/>
     <xsl:param name="input" select="base-uri(.)"/>
 
-    <xsl:variable name="CVU" select="'./CVU7-neu5.xml'"/>
-    <xsl:variable name="Test1" select="'./Originale_Copia/10_AA_I_18_neu.xml'"/>
-    <xsl:variable name="Test2" select="'./Originale_Copia/3_AA_II_80.xml'"/>
-    
-    
-    
     <xsl:function name="cei:prepare">
         <xsl:param name="input"/>
         <xsl:value-of select="replace(replace($input,'&quot;', '”'),'”(\w)','“$1')"/>
@@ -540,13 +534,13 @@
                                         <fo:inline font-style="italic">
                                             <xsl:text>Così in </xsl:text>
                                         </fo:inline>
-                                        <xsl:if test="//cei:witnessOrig/cei:traditioForm[text()]">
+                                        <xsl:if test="ancestor::cei:text//cei:witnessOrig/cei:traditioForm[text()]">
                                             <xsl:text>A, </xsl:text>
                                         </xsl:if>
                                         <xsl:if
-                                            test="not(//cei:witnessOrig/cei:traditioForm[text()])">
+                                            test="not(ancestor::cei:text//cei:witnessOrig/cei:traditioForm[text()])">
                                             <xsl:value-of
-                                                select="concat(//cei:witListPar/cei:witness[1]/@n, ', ')"
+                                                select="concat(ancestor::cei:text//cei:witListPar/cei:witness[1]/@n, ', ')"
                                             />
                                         </xsl:if>
                                         <xsl:analyze-string select="@corr" regex="/\w?[^/]*\w?/">
@@ -570,13 +564,13 @@
                                         <fo:inline font-style="italic">
                                             <xsl:text>Così in </xsl:text>
                                         </fo:inline>
-                                        <xsl:if test="//cei:witnessOrig/cei:traditioForm[text()]">
+                                        <xsl:if test="ancestor::cei:text//cei:witnessOrig/cei:traditioForm[text()]">
                                             <xsl:text>A.</xsl:text>
                                         </xsl:if>
                                         <xsl:if
-                                            test="not(//cei:witnessOrig/cei:traditioForm[text()])">
+                                            test="not(ancestor::cei:text//cei:witnessOrig/cei:traditioForm[text()])">
                                             <xsl:value-of
-                                                select="concat(//cei:witListPar/cei:witness[1]/@n, '.')"
+                                                select="concat(ancestor::cei:text//cei:witListPar/cei:witness[1]/@n, '.')"
                                             />
                                         </xsl:if>
                                     </xsl:if>
@@ -872,13 +866,13 @@
                         <xsl:value-of select=".//cei:traditioForm"/>
                         <xsl:text>, </xsl:text>
                         <!-- <cei:arch -->
-                        <xsl:if test="//cei:arch/text()">
+                        <xsl:if test="ancestor::cei:text//cei:arch/text()">
                             <xsl:value-of
                                 select="normalize-space(cei:archIdentifier/cei:arch/text())"/>
                             <xsl:text> </xsl:text>
                         </xsl:if>
                         <!-- <cei:idno> -->
-                        <xsl:if test="//cei:idno/text()">
+                        <xsl:if test="ancestor::cei:text//cei:idno/text()">
                             <xsl:value-of
                                 select="normalize-space(cei:archIdentifier/cei:idno/text())"/>
                         </xsl:if>
@@ -1101,15 +1095,15 @@
 
     <!-- Template "tenor" -->
     <xsl:template name="tenor">
-        <xsl:apply-templates select="//cei:pTenor"/>
+        <xsl:apply-templates select=".//cei:pTenor"/>
     </xsl:template>
 
 
     <!-- Templates Tenor -->
 
     <!-- Templates aufrufen für cei:pTenor -->
-    <xsl:template match="//cei:pTenor">
-        <xsl:if test="//cei:tenor/cei:pTenor/text()">
+    <xsl:template match="cei:pTenor">
+        <xsl:if test="ancestor::cei:text//cei:tenor/cei:pTenor/text()">
             <fo:block text-indent="10mm" text-align="justify" margin-top="0mm"
                 line-height-shift-adjustment="disregard-shifts" line-height="1.5em">
                 <xsl:apply-templates select="* | text()" mode="tenor"/>
