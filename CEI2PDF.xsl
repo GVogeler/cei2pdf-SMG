@@ -770,7 +770,6 @@
 
     </xsl:template>
 
-
     <!-- Templates Metadaten-->
 
     <!-- Template "issued" (Datum und Ort der Urkunde) -->
@@ -1514,6 +1513,7 @@
 
     <!-- cei:lb (tenor) -->
     <xsl:template match="cei:lb" mode="tenor" priority="-1">
+        
         <xsl:if
             test="
                 preceding-sibling::text()[1] and not(preceding-sibling::node()[
@@ -1533,7 +1533,8 @@
                 self::cei:space[not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
                 self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
                 self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]
-                ])">
+                ]) or (starts-with(following::text()[1],' '))">
+           
             <xsl:choose>
                 <xsl:when
                     test="
@@ -1554,7 +1555,9 @@
                         self::cei:space or
                         self::cei:supplied[@type] or
                         self::cei:unclear[@reason]
-                        ][not(ends-with(text()[1], ' '))]"/>
+                        ][not(ends-with(text()[1], ' '))][not(starts-with(following::text()[1],' '))] or (not(preceding-sibling::node() and ancestor::cei:pTenor[1]))">
+                    
+                </xsl:when>
                 <xsl:otherwise>
                     <xsl:choose>
                         <!-- beides Textknoten; beide Leerzeichen -->
@@ -1758,7 +1761,7 @@
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if test="not(ends-with(., ' '))">
                 <xsl:apply-templates
-                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])][not(self::cei:lb[starts-with(following::text()[1],' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
                     mode="kleber"/>
             </xsl:if>
 
@@ -1771,7 +1774,7 @@
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if test="not(ends-with(., ' '))">
                 <xsl:apply-templates
-                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])][not(self::cei:lb[starts-with(following::text()[1],' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
                     mode="kleber"/>
             </xsl:if>
 
@@ -1784,7 +1787,7 @@
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if test="not(ends-with(., ' '))">
                 <xsl:apply-templates
-                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])][not(self::cei:lb[starts-with(following::text()[1],' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
                     mode="kleber"/>
             </xsl:if>
 
@@ -1797,7 +1800,7 @@
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if test="not(ends-with(., ' '))">
                 <xsl:apply-templates
-                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])][not(self::cei:lb[starts-with(following::text()[1],' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
                     mode="kleber"/>
             </xsl:if>
 
@@ -1810,7 +1813,7 @@
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if test="not(ends-with(., ' '))">
                 <xsl:apply-templates
-                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])][not(self::cei:lb[starts-with(following::text()[1],' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
                     mode="kleber"/>
             </xsl:if>
 
@@ -1823,7 +1826,7 @@
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if test="not(ends-with(., ' '))">
                 <xsl:apply-templates
-                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])][not(self::cei:lb[starts-with(following::text()[1],' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
                     mode="kleber"/>
             </xsl:if>
 
@@ -1836,7 +1839,7 @@
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if test="not(ends-with(., ' '))">
                 <xsl:apply-templates
-                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])][not(self::cei:lb[starts-with(following::text()[1],' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
                     mode="kleber"/>
             </xsl:if>
 
@@ -1852,7 +1855,7 @@
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if test="not(ends-with(., ' '))">
                 <xsl:apply-templates
-                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])][not(self::cei:lb[starts-with(following::text()[1],' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
                     mode="kleber"/>
             </xsl:if>
 
@@ -1865,7 +1868,7 @@
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if test="not(ends-with(., ' '))">
                 <xsl:apply-templates
-                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])][not(self::cei:lb[starts-with(following::text()[1],' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
                     mode="kleber"/>
             </xsl:if>
 
@@ -1877,7 +1880,7 @@
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if test="not(ends-with(., ' '))">
                 <xsl:apply-templates
-                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])][not(self::cei:lb[starts-with(following::text()[1],' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
                     mode="kleber"/>
             </xsl:if>
 
@@ -1889,7 +1892,7 @@
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if test="not(ends-with(., ' '))">
                 <xsl:apply-templates
-                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])][not(self::cei:lb[starts-with(following::text()[1],' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
                     mode="kleber"/>
             </xsl:if>
 
@@ -1903,7 +1906,7 @@
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if test="not(ends-with(., ' '))">
                 <xsl:apply-templates
-                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])][not(self::cei:lb[starts-with(following::text()[1],' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
                     mode="kleber"/>
             </xsl:if>
 
@@ -1917,7 +1920,7 @@
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if test="not(ends-with(., ' '))">
                 <xsl:apply-templates
-                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])][not(self::cei:lb[starts-with(following::text()[1],' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
                     mode="kleber"/>
             </xsl:if>
 
@@ -1930,7 +1933,7 @@
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if test="not(ends-with(., ' '))">
                 <xsl:apply-templates
-                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])][not(self::cei:lb[starts-with(following::text()[1],' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
                     mode="kleber"/>
             </xsl:if>
 
@@ -1943,7 +1946,7 @@
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if test="not(ends-with(., ' '))">
                 <xsl:apply-templates
-                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])][not(self::cei:lb[starts-with(following::text()[1],' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
                     mode="kleber"/>
             </xsl:if>
 
@@ -1956,7 +1959,7 @@
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if test="not(ends-with(., ' '))">
                 <xsl:apply-templates
-                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])][not(self::cei:lb[starts-with(following::text()[1],' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
                     mode="kleber"/>
             </xsl:if>
 
@@ -1969,7 +1972,7 @@
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if test="not(ends-with(., ' '))">
                 <xsl:apply-templates
-                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])][not(self::cei:lb[starts-with(following::text()[1],' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
                     mode="kleber"/>
             </xsl:if>
 
@@ -1982,7 +1985,7 @@
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if test="not(ends-with(., ' '))">
                 <xsl:apply-templates
-                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
+                    select="following-sibling::*[not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])][not(self::cei:lb[starts-with(following::text()[1],' ')])] | following-sibling::text()[not(matches(substring(., 1, 1), '[\s\.,]'))][not(preceding::text()[preceding-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]"
                     mode="kleber"/>
             </xsl:if>
 
@@ -2013,7 +2016,6 @@
 
     <!-- text() kleber -->
     <xsl:template match="text()" mode="kleber">
-        <!--  <fo:inline color="red"><xsl:text>?</xsl:text></fo:inline> -->
         <xsl:choose>
             <!-- Der folgende Textknoten hat kein Leerzeichen -->
             <xsl:when test="not(contains(., ' '))">
@@ -2028,6 +2030,18 @@
                     <xsl:when test="ends-with(., ',')">
                         <xsl:copy-of
                             select="cei:prepare_ext(substring-before(cei:prepare(.), ','), ./ancestor::*)"
+                        />
+                    </xsl:when>
+                    <!-- Der Textknoten endet mit Semikolon -->
+                    <xsl:when test="ends-with(., ';')">
+                        <xsl:copy-of
+                            select="cei:prepare_ext(substring-before(cei:prepare(.), ';'), ./ancestor::*)"
+                        />
+                    </xsl:when>
+                    <!-- Der Textknoten endet mit Doppelpunkt -->
+                    <xsl:when test="ends-with(., ':')">
+                        <xsl:copy-of
+                            select="cei:prepare_ext(substring-before(cei:prepare(.), ':'), ./ancestor::*)"
                         />
                     </xsl:when>
                     <xsl:otherwise>
@@ -2186,7 +2200,6 @@
             <xsl:apply-templates select="* | text()" mode="tenor"/>
         </fo:inline>
     </xsl:template>
-
 
 
 </xsl:stylesheet>
