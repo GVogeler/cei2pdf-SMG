@@ -5,23 +5,51 @@
     version="3.0" id="charter2pdf">
     <xsl:preserve-space elements="*"/>
     <xsl:output indent="yes"/>
-    
-    
+
+
     <xsl:key name="names" match="//*" use="local-name(.)"/>
     <xsl:param name="input" select="base-uri(.)"/>
+    
+    
 
+    <!-- function cei:prepare_ext -->
+    <xsl:function name="cei:prepare_ext">
+        <xsl:param name="input"/>
+        <xsl:param name="vorfahren"/>
+        <xsl:choose>
+            <xsl:when test="$vorfahren/@rend[contains(., 'monogrammat') or contains(., 'maiusc') or contains(., 'elongat') or contains(., 'capital') or contains(., 'oncia')]">
+                
+                
+                <!--  <xsl:value-of select="$vorfahren/*/name()"/> cei:hi[contains(@rend, 'monogrammat') or contains(@rend, 'maiusc') or contains(@rend, 'elongat') or contains(@rend, 'capital') or contains(@rend, 'oncia')] -->
+                <xsl:analyze-string select="$input" regex="[A-Z]">
+                    <xsl:matching-substring>
+                        <xsl:value-of select="."/>
+                    </xsl:matching-substring>
+                    <xsl:non-matching-substring>
+                        <xsl:text>&#x200D;</xsl:text>
+                        <fo:inline font-style="normal" font-size="75%">
+                            <xsl:value-of select="(upper-case(.))"/>
+                        </fo:inline>
+                        <xsl:text>&#x200D;</xsl:text>
+                    </xsl:non-matching-substring>
+                </xsl:analyze-string>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:value-of
+                    select="
+                        replace(replace($input, '&quot;',
+                        '”'), '”(\w)', '“$1')"
+                />
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:function>
+
+    <!-- function cei:prepare -->
     <xsl:function name="cei:prepare">
         <xsl:param name="input"/>
-        <xsl:value-of select="replace(replace($input,'&quot;', '”'),'”(\w)','“$1')"/>
-            <!--<xsl:value-of select="replace(replace($input,'(\S)&quot;', '$1”'),
-                '&quot;(\S)', '“$1')"/>-->
-       
+        <xsl:value-of select="replace(replace($input, '&quot;', '”'), '”(\w)', '“$1')"/>
     </xsl:function>
-   
-    
-    
-    
-    
+
 
     <!-- Leerzeichen aus Elementen rausziehen (löschen und zwischen Elemente schreiben) -->
     <!-- Input Urkunden // XML-Dateien -->
@@ -31,13 +59,11 @@
         select="replace($intermediate1, ' (&lt;cei:note.*?&lt;/cei:note>)', '$1 ')"/>
     <xsl:variable name="result"
         select="parse-xml(replace($intermediate2, ' (&lt;cei:handShift.*?/>)', '$1 '))"/>
-    
-    
 
 
     <!-- Wurzelknoten -->
     <xsl:template match="/">
-       <!-- <xsl:result-document href="replaced1.xml">
+        <!-- <xsl:result-document href="replaced1.xml">
             <xsl:copy-of select="$result"/>
         </xsl:result-document>-->
         <xsl:call-template name="charter">
@@ -251,84 +277,84 @@
                                             <xsl:when test="@type = 'su'">
                                                 <!-- Achtung: Matched nur auf einen Text-Knoten -->
                                                 <xsl:if
-                                                    test="ends-with(text()[last()]/preceding::text()[1], ' ') and starts-with(text()/following::text()[1], ' ')">
-                                                    <xsl:value-of select="text()"/>
+                                                  test="ends-with(text()[last()]/preceding::text()[1], ' ') and starts-with(text()/following::text()[1], ' ')">
+                                                  <xsl:value-of select="text()"/>
                                                 </xsl:if>
                                                 <xsl:if
-                                                    test="not(ends-with(text()[1]/preceding::text()[1], ' ')) and starts-with(text()[1]/following::text()[1], ' ')">
-                                                    <xsl:value-of select="concat('-', text()[1])"/>
+                                                  test="not(ends-with(text()[1]/preceding::text()[1], ' ')) and starts-with(text()[1]/following::text()[1], ' ')">
+                                                  <xsl:value-of select="concat('-', text()[1])"/>
                                                 </xsl:if>
                                                 <xsl:if
-                                                    test="ends-with(text()[last()]/preceding::text()[1], ' ') and not(starts-with(text()/following::text()[1], ' '))">
-                                                    <xsl:value-of select="concat(text()[1], '-')"/>
+                                                  test="ends-with(text()[last()]/preceding::text()[1], ' ') and not(starts-with(text()/following::text()[1], ' '))">
+                                                  <xsl:value-of select="concat(text()[1], '-')"/>
                                                 </xsl:if>
                                                 <xsl:if
-                                                    test="not(ends-with(text()[last()]/preceding::text()[1], ' ')) and not(starts-with(text()[1]/following::text()[1], ' '))">
-                                                    <xsl:value-of select="concat('-', text()[1], '-')"
-                                                    />
+                                                  test="not(ends-with(text()[last()]/preceding::text()[1], ' ')) and not(starts-with(text()[1]/following::text()[1], ' '))">
+                                                  <xsl:value-of select="concat('-', text()[1], '-')"
+                                                  />
                                                 </xsl:if>
                                                 <fo:inline font-style="italic">
-                                                    <xsl:text> corr. su </xsl:text>
+                                                  <xsl:text> corr. su </xsl:text>
                                                 </fo:inline>
                                                 <xsl:analyze-string select="@sic"
-                                                    regex="/\w?[^/]*\w?/">
-                                                    <xsl:matching-substring>
-                                                        <fo:inline font-style="italic">
-                                                            <xsl:value-of
-                                                                select="substring-before(substring-after(., '/'), '/')"
-                                                            />
-                                                        </fo:inline>
-                                                    </xsl:matching-substring>
-                                                    <xsl:non-matching-substring>
-                                                        <xsl:value-of select="."/>
-                                                    </xsl:non-matching-substring>
+                                                  regex="/\w?[^/]*\w?/">
+                                                  <xsl:matching-substring>
+                                                  <fo:inline font-style="italic">
+                                                  <xsl:value-of
+                                                  select="substring-before(substring-after(., '/'), '/')"
+                                                  />
+                                                  </fo:inline>
+                                                  </xsl:matching-substring>
+                                                  <xsl:non-matching-substring>
+                                                  <xsl:value-of select="."/>
+                                                  </xsl:non-matching-substring>
                                                 </xsl:analyze-string>
                                             </xsl:when>
                                             <xsl:otherwise>
                                                 <xsl:value-of select="concat('-', text()[1], '-')"/>
                                                 <fo:inline font-style="italic">
-                                                    <xsl:text> corr. da </xsl:text>
+                                                  <xsl:text> corr. da </xsl:text>
                                                 </fo:inline>
                                                 <xsl:analyze-string select="@sic"
-                                                    regex="/\w?[^/]*\w?/">
-                                                    <xsl:matching-substring>
-                                                        <fo:inline font-style="italic">
-                                                            <xsl:value-of
-                                                                select="substring-before(substring-after(., '/'), '/')"
-                                                            />
-                                                        </fo:inline>
-                                                    </xsl:matching-substring>
-                                                    <xsl:non-matching-substring>
-                                                        <xsl:value-of select="."/>
-                                                    </xsl:non-matching-substring>
+                                                  regex="/\w?[^/]*\w?/">
+                                                  <xsl:matching-substring>
+                                                  <fo:inline font-style="italic">
+                                                  <xsl:value-of
+                                                  select="substring-before(substring-after(., '/'), '/')"
+                                                  />
+                                                  </fo:inline>
+                                                  </xsl:matching-substring>
+                                                  <xsl:non-matching-substring>
+                                                  <xsl:value-of select="."/>
+                                                  </xsl:non-matching-substring>
                                                 </xsl:analyze-string>
                                                 <xsl:text>, </xsl:text>
                                                 <xsl:analyze-string select="@type"
-                                                    regex="/\w?[^/]*\w?/">
-                                                    <xsl:matching-substring>
-                                                        <fo:inline font-style="italic">
-                                                            <xsl:value-of
-                                                                select="substring-before(substring-after(., '/'), '/')"
-                                                            />
-                                                        </fo:inline>
-                                                    </xsl:matching-substring>
-                                                    <xsl:non-matching-substring>
-                                                        <xsl:value-of select="."/>
-                                                    </xsl:non-matching-substring>
+                                                  regex="/\w?[^/]*\w?/">
+                                                  <xsl:matching-substring>
+                                                  <fo:inline font-style="italic">
+                                                  <xsl:value-of
+                                                  select="substring-before(substring-after(., '/'), '/')"
+                                                  />
+                                                  </fo:inline>
+                                                  </xsl:matching-substring>
+                                                  <xsl:non-matching-substring>
+                                                  <xsl:value-of select="."/>
+                                                  </xsl:non-matching-substring>
                                                 </xsl:analyze-string>
                                             </xsl:otherwise>
                                         </xsl:choose>
                                     </xsl:if>
-                                    
+
                                     <!-- cei:corr[@type and not(@sic)] -->
                                     <xsl:if test="self::cei:corr[@type and not(@sic)]">
                                         <xsl:analyze-string select="@type" regex="/\w?[^/]*\w?/">
                                             <xsl:matching-substring>
                                                 <xsl:text>&#x200D;</xsl:text>
                                                 <fo:inline font-style="italic">
-                                                    <xsl:value-of
-                                                        select="substring-before(substring-after(., '/'), '/')"
-                                                    />
+                                                  <xsl:value-of
+                                                  select="substring-before(substring-after(., '/'), '/')"
+                                                  />
                                                 </fo:inline>
                                                 <xsl:text>&#x200D;</xsl:text>
                                             </xsl:matching-substring>
@@ -337,7 +363,7 @@
                                             </xsl:non-matching-substring>
                                         </xsl:analyze-string>
                                     </xsl:if>
-                                    
+
                                     <!-- cei:corr[not(@type) and @sic] -->
                                     <xsl:if test="self::cei:corr[not(@type) and @sic]">
                                         <xsl:choose>
@@ -348,39 +374,39 @@
                                             <xsl:otherwise>
                                                 <!-- Achtung: Matched jetzt nur auf einen Text-Knoten -->
                                                 <xsl:if
-                                                    test="ends-with(text()[last()]/preceding::text()[1], ' ') and starts-with(text()[1]/following::text()[1], ' ')">
-                                                    <xsl:value-of select="text()"/>
+                                                  test="ends-with(text()[last()]/preceding::text()[1], ' ') and starts-with(text()[1]/following::text()[1], ' ')">
+                                                  <xsl:value-of select="text()"/>
                                                 </xsl:if>
                                                 <xsl:if
-                                                    test="not(ends-with(text()[last()]/preceding::text()[1], ' ')) and starts-with(text()[1]/following::text()[1], ' ')">
-                                                    <xsl:value-of select="concat('-', text()[1])"/>
+                                                  test="not(ends-with(text()[last()]/preceding::text()[1], ' ')) and starts-with(text()[1]/following::text()[1], ' ')">
+                                                  <xsl:value-of select="concat('-', text()[1])"/>
                                                 </xsl:if>
                                                 <xsl:if
-                                                    test="ends-with(text()[last()]/preceding::text()[1], ' ') and not(starts-with(text()[1]/following::text()[1], ' '))">
-                                                    <xsl:value-of select="concat(text()[1], '-')"/>
+                                                  test="ends-with(text()[last()]/preceding::text()[1], ' ') and not(starts-with(text()[1]/following::text()[1], ' '))">
+                                                  <xsl:value-of select="concat(text()[1], '-')"/>
                                                 </xsl:if>
                                                 <xsl:if
-                                                    test="not(ends-with(text()[1]/preceding::text()[1], ' ')) and not(starts-with(text()[1]/following::text()[1], ' '))">
-                                                    <xsl:value-of select="concat('-', text()[1], '-')"
-                                                    />
+                                                  test="not(ends-with(text()[1]/preceding::text()[1], ' ')) and not(starts-with(text()[1]/following::text()[1], ' '))">
+                                                  <xsl:value-of select="concat('-', text()[1], '-')"
+                                                  />
                                                 </xsl:if>
                                                 <fo:inline font-style="italic">
-                                                    <xsl:text> corr. da</xsl:text>
-                                                    <xsl:text> </xsl:text>
+                                                  <xsl:text> corr. da</xsl:text>
+                                                  <xsl:text> </xsl:text>
                                                 </fo:inline>
                                                 <xsl:analyze-string select="@sic"
-                                                    regex="/\w?[^/]*\w?/">
-                                                    <xsl:matching-substring>
-                                                        <fo:inline font-style="italic">
-                                                            <xsl:value-of
-                                                                select="substring-before(substring-after(., '/'), '/')"
-                                                            />
-                                                        </fo:inline>
-                                                        <xsl:text>&#x200D;</xsl:text>
-                                                    </xsl:matching-substring>
-                                                    <xsl:non-matching-substring>
-                                                        <xsl:value-of select="."/>
-                                                    </xsl:non-matching-substring>
+                                                  regex="/\w?[^/]*\w?/">
+                                                  <xsl:matching-substring>
+                                                  <fo:inline font-style="italic">
+                                                  <xsl:value-of
+                                                  select="substring-before(substring-after(., '/'), '/')"
+                                                  />
+                                                  </fo:inline>
+                                                  <xsl:text>&#x200D;</xsl:text>
+                                                  </xsl:matching-substring>
+                                                  <xsl:non-matching-substring>
+                                                  <xsl:value-of select="."/>
+                                                  </xsl:non-matching-substring>
                                                 </xsl:analyze-string>
                                             </xsl:otherwise>
                                         </xsl:choose>
@@ -534,7 +560,8 @@
                                         <fo:inline font-style="italic">
                                             <xsl:text>Così in </xsl:text>
                                         </fo:inline>
-                                        <xsl:if test="ancestor::cei:text//cei:witnessOrig/cei:traditioForm[text()]">
+                                        <xsl:if
+                                            test="ancestor::cei:text//cei:witnessOrig/cei:traditioForm[text()]">
                                             <xsl:text>A, </xsl:text>
                                         </xsl:if>
                                         <xsl:if
@@ -564,7 +591,8 @@
                                         <fo:inline font-style="italic">
                                             <xsl:text>Così in </xsl:text>
                                         </fo:inline>
-                                        <xsl:if test="ancestor::cei:text//cei:witnessOrig/cei:traditioForm[text()]">
+                                        <xsl:if
+                                            test="ancestor::cei:text//cei:witnessOrig/cei:traditioForm[text()]">
                                             <xsl:text>A.</xsl:text>
                                         </xsl:if>
                                         <xsl:if
@@ -843,7 +871,8 @@
                 <!-- <cei:idno> -->
                 <xsl:if test=".//cei:witListPar/cei:witness[1]//cei:idno/text()">
                     <xsl:value-of
-                        select="normalize-space(.//cei:witListPar/cei:witness[1]//cei:idno/text())"/>
+                        select="normalize-space(.//cei:witListPar/cei:witness[1]//cei:idno/text())"
+                    />
                 </xsl:if>
                 <!-- Sigle B -->
                 <xsl:if test=".//cei:witListPar/cei:witness[1][@n]">
@@ -880,7 +909,7 @@
                             <xsl:value-of select="concat(' [', @n, ']')"/>
                         </xsl:if>
                         <xsl:if test="cei:archIdentifier/text()[preceding-sibling::cei:idno]">
-                            <xsl:value-of select="concat(' ',cei:archIdentifier/text()[last()])"/>
+                            <xsl:value-of select="concat(' ', cei:archIdentifier/text()[last()])"/>
                         </xsl:if>
                     </xsl:for-each>
                     <xsl:text>. </xsl:text>
@@ -926,7 +955,8 @@
         <xsl:if test=".//cei:diplomaticAnalysis/cei:listBiblRegest/cei:bibl/text()">
             <fo:block text-indent="10mm" text-align="justify" font-size="10pt">
                 <xsl:text>Reg. </xsl:text>
-                <xsl:apply-templates select=".//cei:diplomaticAnalysis/cei:listBiblRegest/cei:bibl"/>
+                <xsl:apply-templates select=".//cei:diplomaticAnalysis/cei:listBiblRegest/cei:bibl"
+                />
             </fo:block>
         </xsl:if>
     </xsl:template>
@@ -939,7 +969,8 @@
                     select=".//cei:witnessOrig/cei:physicalDesc/cei:condition/text()"
                     mode="normalized"/>
                 <xsl:text> </xsl:text>
-                <xsl:apply-templates select=".//cei:witnessOrig/cei:physicalDesc/cei:material/text()"
+                <xsl:apply-templates
+                    select=".//cei:witnessOrig/cei:physicalDesc/cei:material/text()"
                     mode="normalized"/>
                 <xsl:text> </xsl:text>
                 <xsl:apply-templates select=".//cei:witnessOrig/cei:auth/cei:sealDesc/text()"
@@ -967,7 +998,7 @@
     <xsl:template name="link">
         <fo:block text-indent="10mm" text-align="justify" font-size="10pt">
             <xsl:text>Edizione digitale dei documenti dell'abbazia di S. Maria della Grotta presso Benevento (1200- 1250), n. ## (</xsl:text>
-                <xsl:text>http://monasterium.net/mom/SMG1200-1250/SMG', '_##', '/charter</xsl:text>
+            <xsl:text>http://monasterium.net/mom/SMG1200-1250/SMG', '_##', '/charter</xsl:text>
             <xsl:value-of select="concat(')', '')"/>
         </fo:block>
 
@@ -1136,67 +1167,89 @@
                     or preceding-sibling::node()[1][self::cei:damage[attribute()]] or preceding-sibling::node()[1][self::cei:lb][preceding-sibling::node()[1][self::cei:damage[attribute()]]]
                     or preceding-sibling::node()[1][self::cei:del[@type]] or preceding-sibling::node()[1][self::cei:lb][preceding-sibling::node()[1][self::cei:damage[attribute()]]]
                     or preceding-sibling::node()[1][self::cei:handShift[@hand]] or preceding-sibling::node()[1][self::cei:lb][preceding-sibling::node()[1][self::cei:handShift[@hand]]]
-                    or preceding-sibling::node()[1][self::cei:hi[contains(@rend, 'in nesso monogrammatico')]] or preceding-sibling::node()[1][self::cei:lb][preceding-sibling::node()[1][self::cei:hi[contains(@rend, 'in nesso monogrammatico')]]]
+                    or preceding-sibling::node()[1][self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))]] or preceding-sibling::node()[1][self::cei:lb][preceding-sibling::node()[1][self::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))]]]
                     or preceding-sibling::node()[1][self::cei:sic[@corr or not(attribute())]] or preceding-sibling::node()[1][self::cei:lb][preceding-sibling::node()[1][self::cei:sic[@corr or not(attribute())]]]
                     or preceding-sibling::node()[1][self::cei:space] or preceding-sibling::node()[1][self::cei:lb][preceding-sibling::node()[1][self::cei:space]]
                     or preceding-sibling::node()[1][self::cei:supplied[@type]] or preceding-sibling::node()[1][self::cei:lb][preceding-sibling::node()[1][self::cei:supplied[@type]]]
                     or preceding-sibling::node()[1][self::cei:unclear[@reason]] or preceding-sibling::node()[1][self::cei:lb][preceding-sibling::node()[1][self::cei:unclear[@reason]]]
-                    
                     or preceding-sibling::node()[1][self::cei:note] or preceding-sibling::node()[1][self::cei:lb][preceding-sibling::node()[1][self::cei:note]]
                     or preceding-sibling::node()[1][self::cei:quote[ancestor::cei:cit]] or preceding-sibling::node()[1][self::cei:lb][preceding-sibling::node()[1][self::cei:quote[ancestor::cei:cit]]]
-                    
                     )
                     ">
-                
+
                 <xsl:choose>
+
                     <!-- Der Textknoten hat ein Leerzeichen -->
                     <xsl:when test="contains(., ' ')">
                         <xsl:choose>
+                            <!-- Komma (,) vor Leerzeichen -->
                             <xsl:when test="ends-with(substring-before(cei:prepare(.), ' '), ',')">
                                 <xsl:text>, </xsl:text>
-                                <xsl:value-of select="substring-after(cei:prepare(.), ' ')"/>
+                                <xsl:copy-of
+                                    select="cei:prepare_ext(substring-after(cei:prepare(.), ' '), ./ancestor::*)"
+                                />
                             </xsl:when>
+                            <!-- Punkt (.) vor Leerzeichen -->
                             <xsl:when test="ends-with(substring-before(cei:prepare(.), ' '), '.')">
                                 <xsl:text>. </xsl:text>
-                                <xsl:value-of select="substring-after(cei:prepare(.), ' ')"/>
+                                <xsl:copy-of
+                                    select="cei:prepare_ext(substring-after(cei:prepare(.), ' '), ./ancestor::*)"
+                                />
                             </xsl:when>
+                            <!-- Doppelpunkt (:) vor Leerzeichen -->
                             <xsl:when test="ends-with(substring-before(cei:prepare(.), ' '), ':')">
                                 <xsl:text>: </xsl:text>
-                                <xsl:value-of select="substring-after(cei:prepare(.), ' ')"/>
+                                <xsl:copy-of
+                                    select="cei:prepare_ext(substring-after(cei:prepare(.), ' '), ./ancestor::*)"
+                                />
                             </xsl:when>
+                            <!-- Semikolon (;) vor Leerzeichen -->
                             <xsl:when test="ends-with(substring-before(cei:prepare(.), ' '), ';')">
                                 <xsl:text>; </xsl:text>
-                                <xsl:value-of select="substring-after(cei:prepare(.), ' ')"/>
+                                <xsl:copy-of
+                                    select="cei:prepare_ext(substring-after(cei:prepare(.), ' '), ./ancestor::*)"
+                                />
                             </xsl:when>
+                            <!-- otherwise -->
                             <xsl:otherwise>
                                 <xsl:text> </xsl:text>
-                                <xsl:value-of select="substring-after(cei:prepare(.), ' ')"/>
+                                <xsl:copy-of
+                                    select="cei:prepare_ext(substring-after(cei:prepare(.), ' '), ./ancestor::*)"
+                                />
                             </xsl:otherwise>
                         </xsl:choose>
                     </xsl:when>
+
                     <!-- Der Textknoten hat kein Leerzeichen -->
-                    <xsl:when test="not(contains(.,' '))">
+                    <xsl:when test="not(contains(., ' '))">
                         <xsl:choose>
-                            <xsl:when test="ends-with(.,',')">
+                            <!-- endet mit Komma (,) -->
+                            <xsl:when test="ends-with(., ',')">
                                 <xsl:text>,</xsl:text>
                             </xsl:when>
+                            <!-- endet mit Punkt (.) -->
                             <xsl:when test="ends-with(., '.')">
                                 <xsl:text>.</xsl:text>
                             </xsl:when>
+                            <!-- endet mit Doppelpunkt (:) -->
                             <xsl:when test="ends-with(., ':')">
                                 <xsl:text>:</xsl:text>
                             </xsl:when>
+                            <!-- endet mit Semikolon (;) -->
                             <xsl:when test="ends-with(., ';')">
                                 <xsl:text>;</xsl:text>
                             </xsl:when>
                         </xsl:choose>
                     </xsl:when>
+
                     <xsl:otherwise>
                         <xsl:choose>
                             <!-- Ausgabe Textknoten, die Teil eines Zitates (cei:quote) sind -->
                             <xsl:when test="ancestor::cei:quote">
                                 <xsl:text xml:space="preserve"> </xsl:text>
-                              <xsl:value-of select="substring-after(cei:prepare(.), ' ')"/>
+                                <xsl:copy-of
+                                    select="cei:prepare_ext(substring-after(cei:prepare(.), ' '), ./ancestor::*)"
+                                />
                             </xsl:when>
                         </xsl:choose>
                     </xsl:otherwise>
@@ -1205,22 +1258,25 @@
 
             <!-- Ausgabe Textknoten, die nicht an Fußnotenelement kleben -->
             <xsl:otherwise>
-                
-                
                 <xsl:choose>
-                    
+
                     <!-- Ausgabe Textknoten, die Teil eines Zitates (cei:quote) sind -->
                     <xsl:when test="starts-with(., ' ') and ancestor::cei:quote">
                         <xsl:text xml:space="preserve"> </xsl:text>
-                        <xsl:value-of select="substring-after(cei:prepare(.),' ')"/>
+                        <xsl:copy-of
+                            select="cei:prepare_ext(substring-after(cei:prepare(.), ' '), ./ancestor::*)"
+                        />
                     </xsl:when>
+
+                    <!-- otherwise  -->
                     <xsl:otherwise>
-                        <xsl:value-of select="cei:prepare(.)"/>
+                        <xsl:copy-of select="cei:prepare_ext(cei:prepare(.), ./ancestor::*)"/>
                     </xsl:otherwise>
                 </xsl:choose>
             </xsl:otherwise>
         </xsl:choose>
     </xsl:template>
+
 
     <!-- Templates Tenor Ausgabe Text von Elementen, die nicht an Fußbnotenelementen kleben -->
 
@@ -1398,7 +1454,7 @@
                 self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
                 self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]
                 ])">
-            <xsl:apply-templates select="text() | *" mode="sc"> </xsl:apply-templates>
+            <xsl:apply-templates select="text() | *" mode="tenor"> </xsl:apply-templates>
         </xsl:if>
     </xsl:template>
 
@@ -1498,7 +1554,7 @@
                         self::cei:space or
                         self::cei:supplied[@type] or
                         self::cei:unclear[@reason]
-                        ][not(ends-with(text()[1], ' '))]"> </xsl:when>
+                        ][not(ends-with(text()[1], ' '))]"/>
                 <xsl:otherwise>
                     <xsl:choose>
                         <!-- beides Textknoten; beide Leerzeichen -->
@@ -1616,78 +1672,18 @@
                 self::cei:supplied[@type][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])] or
                 self::cei:unclear[@reason][not(following::text()[following-sibling::*/generate-id() = current()/generate-id()][contains(., ' ')])]
                 ])">
-            <xsl:text>&#x200D;</xsl:text> <fo:inline font-style="italic"><xsl:text>&#x200D;</xsl:text>
-                <xsl:apply-templates select="* | text()" mode="tenor"/><xsl:text>&#x200D;</xsl:text>
-            </fo:inline><xsl:text>&#x200D;</xsl:text>
+            <xsl:text>&#x200D;</xsl:text>
+            <fo:inline font-style="italic">
+                <xsl:text>&#x200D;</xsl:text>
+                <xsl:apply-templates select="* | text()" mode="tenor"/>
+                <xsl:text>&#x200D;</xsl:text>
+            </fo:inline>
+            <xsl:text>&#x200D;</xsl:text>
         </xsl:if>
     </xsl:template>
 
-    <!-- Templates Tenor (small caps: sc) -->
-
-    <!-- text() (sc) -->
-    <xsl:template match="text()" mode="sc" priority="-1">
-        <xsl:analyze-string select="." regex="[A-Z]">
-            <xsl:matching-substring>
-                <xsl:value-of select="cei:prepare(.)"/>
-            </xsl:matching-substring>
-            <xsl:non-matching-substring>
-                <xsl:text>&#x200D;</xsl:text>
-                <fo:inline font-style="normal" font-size="75%">
-                    <xsl:value-of select="upper-case(cei:prepare(.))"/>
-                </fo:inline>
-                <xsl:text>&#x200D;</xsl:text>
-            </xsl:non-matching-substring>
-        </xsl:analyze-string>
-    </xsl:template>
-
-    <!-- cei:expan (sc) -->
-    <xsl:template match="cei:expan" mode="sc" priority="-1">
-        <xsl:choose>
-            <xsl:when test="contains(./text()[1], 'Iesu')">
-                <xsl:analyze-string select="." regex="[A-Z]">
-                    <xsl:matching-substring>
-                        <xsl:value-of select="cei:prepare(.)"/>
-                    </xsl:matching-substring>
-                    <xsl:non-matching-substring>
-                        <xsl:text>&#x200D;</xsl:text>
-                        <fo:inline font-style="normal" font-size="75%">
-                            <xsl:text/>
-                            <xsl:value-of select="upper-case(cei:prepare(.))"/>
-                            <xsl:text/>
-                        </fo:inline>
-                        <xsl:text>&#x200D;</xsl:text>
-                    </xsl:non-matching-substring>
-                </xsl:analyze-string>
-            </xsl:when>
-            <xsl:otherwise>
-                <xsl:text>(</xsl:text>
-                <xsl:analyze-string select="." regex="[A-Z]">
-                    <xsl:matching-substring>
-                        <xsl:value-of select="cei:prepare(.)"/>
-                    </xsl:matching-substring>
-                    <xsl:non-matching-substring>
-                        <xsl:text>&#x200D;</xsl:text>
-                        <fo:inline font-style="normal" font-size="75%">
-                            <xsl:text/>
-                            <xsl:value-of select="upper-case(cei:prepare(.))"/>
-                            <xsl:text/>
-                        </fo:inline>
-                        <xsl:text>&#x200D;</xsl:text>
-                    </xsl:non-matching-substring>
-                </xsl:analyze-string>
-                <xsl:text>)</xsl:text>
-            </xsl:otherwise>
-        </xsl:choose>
-        <xsl:if test="ends-with(./text()[last()], ' ')">
-            <xsl:text> </xsl:text>
-        </xsl:if>
-    </xsl:template>
-
-    <!-- cei:lb (sc); rekursiv -->
-    <xsl:template match="cei:lb" mode="sc" priority="-1">
-        <xsl:apply-templates select="." mode="tenor"/>
-    </xsl:template>
-
+    
+   
     <!-- Templates Tenor Fußnoten-Elemente -->
 
     <!-- Zahlen (tenor) -->
@@ -1902,7 +1898,7 @@
         <!-- cei:hi[contains(@rend,'monogrammat') or contains(@rend,'maiusc') or contains(@rend,'elongat') or contains(@rend,'capital') or contains(@rend,'oncia')] -->
         <xsl:if
             test="self::cei:hi[contains(@rend, 'monogrammat') or contains(@rend, 'maiusc') or contains(@rend, 'elongat') or contains(@rend, 'capital') or contains(@rend, 'oncia')]">
-            <xsl:apply-templates select="text() | *" mode="sc"> </xsl:apply-templates>
+            <xsl:apply-templates select="text() | *" mode="tenor"> </xsl:apply-templates>
 
             <!-- Test, ob Text und oder Element(e) an aktuellem Knoten kleben -->
             <xsl:if test="not(ends-with(., ' '))">
@@ -1998,10 +1994,10 @@
             <fo:inline baseline-shift="super" font-size="8pt" font-style="normal">
                 <xsl:number
                     value="
-                    count(preceding::cei:space[ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:damage[attribute()][ancestor::cei:tenor = current()/ancestor::cei:tenor] |
-                    preceding::cei:sic[@corr or not(attribute())][ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:unclear[@reason][ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:add[@type][ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:c[@type][ancestor::cei:tenor = current()/ancestor::cei:tenor] |
-                    preceding::cei:corr[@sic and @type][ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:corr[@type and not(@sic)][ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:corr[@sic and not(@type)][ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:del[@type][ancestor::cei:tenor = current()/ancestor::cei:tenor] |
-                    preceding::cei:handShift[@hand][ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:add[@hand][ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:supplied[attribute()][ancestor::cei:tenor = current()/ancestor::cei:tenor]) + 1"
+                        count(preceding::cei:space[ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:damage[attribute()][ancestor::cei:tenor = current()/ancestor::cei:tenor] |
+                        preceding::cei:sic[@corr or not(attribute())][ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:unclear[@reason][ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:add[@type][ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:c[@type][ancestor::cei:tenor = current()/ancestor::cei:tenor] |
+                        preceding::cei:corr[@sic and @type][ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:corr[@type and not(@sic)][ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:corr[@sic and not(@type)][ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:del[@type][ancestor::cei:tenor = current()/ancestor::cei:tenor] |
+                        preceding::cei:handShift[@hand][ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:hi[not(contains(@rend, 'lettere maiuscole') or contains(@rend, 'litterae elongatae'))][ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:add[@hand][ancestor::cei:tenor = current()/ancestor::cei:tenor] | preceding::cei:supplied[attribute()][ancestor::cei:tenor = current()/ancestor::cei:tenor]) + 1"
                     format="a"/>
             </fo:inline>
 
@@ -2024,11 +2020,15 @@
                 <xsl:choose>
                     <!-- Der Textknoten endet mit Punkt -->
                     <xsl:when test="ends-with(., '.')">
-                        <xsl:value-of select="substring-before(cei:prepare(.), '.')"/>
+                        <xsl:copy-of
+                            select="cei:prepare_ext(substring-before(cei:prepare(.), '.'), ./ancestor::*)"
+                        />
                     </xsl:when>
                     <!-- Der Textknoten endet mit Komma -->
                     <xsl:when test="ends-with(., ',')">
-                        <xsl:value-of select="substring-before(cei:prepare(.), ',')"/>
+                        <xsl:copy-of
+                            select="cei:prepare_ext(substring-before(cei:prepare(.), ','), ./ancestor::*)"
+                        />
                     </xsl:when>
                     <xsl:otherwise>
                         <xsl:value-of select="."/>
@@ -2037,22 +2037,27 @@
             </xsl:when>
             <!-- Dem ersten Leerzeichen geht ein Punkt voran -->
             <xsl:when test="ends-with(substring-before(., ' '), '.')">
-                <xsl:value-of select="substring-before(cei:prepare(.), '.')"/>
+                <xsl:copy-of
+                    select="cei:prepare_ext(substring-before(cei:prepare(.), '.'), ./ancestor::*)"/>
             </xsl:when>
             <!-- Dem ersten Leerzeichen geht ein Komma voran -->
             <xsl:when test="ends-with(substring-before(., ' '), ',')">
-                <xsl:value-of select="substring-before(cei:prepare(.), ',')"/>
+                <xsl:copy-of
+                    select="cei:prepare_ext(substring-before(cei:prepare(.), ','), ./ancestor::*)"/>
             </xsl:when>
             <!-- Dem ersten Leerzeichen geht ein Semikolon voran -->
             <xsl:when test="ends-with(substring-before(., ' '), ';')">
-                <xsl:value-of select="substring-before(cei:prepare(.), ';')"/>
+                <xsl:copy-of
+                    select="cei:prepare_ext(substring-before(cei:prepare(.), ';'), ./ancestor::*)"/>
             </xsl:when>
             <!-- Dem ersten Leerzeichen geht ein Doppelpunt voran -->
             <xsl:when test="ends-with(substring-before(., ' '), ':')">
-                <xsl:value-of select="substring-before(cei:prepare(.), ':')"/>
+                <xsl:copy-of
+                    select="cei:prepare_ext(substring-before(cei:prepare(.), ':'), ./ancestor::*)"/>
             </xsl:when>
             <xsl:otherwise>
-                <xsl:value-of select="substring-before(cei:prepare(.) , ' ')"/>
+                <xsl:copy-of
+                    select="cei:prepare_ext(substring-before(cei:prepare(.), ' '), ./ancestor::*)"/>
             </xsl:otherwise>
         </xsl:choose>
 
@@ -2107,7 +2112,7 @@
     <xsl:template
         match="cei:hi[contains(@rend, 'monogrammat') or contains(@rend, 'maiusc') or contains(@rend, 'elongat') or contains(@rend, 'capital') or contains(@rend, 'oncia')]"
         mode="kleber" priority="-2">
-        <xsl:apply-templates select="text() | *" mode="sc"> </xsl:apply-templates>
+        <xsl:apply-templates select="text() | *" mode="tenor"> </xsl:apply-templates>
     </xsl:template>
 
     <!-- cei:hi[not(contains(@rend,'monogrammat') or contains(@rend,'maiusc') or contains(@rend,'elongat') or contains(@rend,'capital') or contains(@rend,'oncia'))] (kleber) -->
@@ -2181,7 +2186,7 @@
             <xsl:apply-templates select="* | text()" mode="tenor"/>
         </fo:inline>
     </xsl:template>
-    
-   
+
+
 
 </xsl:stylesheet>
