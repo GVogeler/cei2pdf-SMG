@@ -26,11 +26,11 @@
                         <xsl:value-of select="."/>
                     </xsl:matching-substring>
                     <xsl:non-matching-substring>
-                        <xsl:text>&#x200D;</xsl:text>
+                        
                         <fo:inline font-style="normal" font-size="75%">
                             <xsl:value-of select="(upper-case(.))"/>
                         </fo:inline>
-                        <xsl:text>&#x200D;</xsl:text>
+                        
                     </xsl:non-matching-substring>
                 </xsl:analyze-string>
             </xsl:when>
@@ -558,7 +558,7 @@
                                     <xsl:if test="self::cei:sic[@corr]">
                                         <xsl:text>&#x200D;</xsl:text>
                                         <fo:inline font-style="italic">
-                                            <xsl:text>Così in </xsl:text>
+                                            <xsl:text>Così </xsl:text>
                                         </fo:inline>
                                         <xsl:if
                                             test="ancestor::cei:text//cei:witnessOrig/cei:traditioForm[text()]">
@@ -589,7 +589,7 @@
                                     <xsl:if test="self::cei:sic[not(attribute())]">
                                         <xsl:text>&#x200D;</xsl:text>
                                         <fo:inline font-style="italic">
-                                            <xsl:text>Così in </xsl:text>
+                                            <xsl:text>Così </xsl:text>
                                         </fo:inline>
                                         <xsl:if
                                             test="ancestor::cei:text//cei:witnessOrig/cei:traditioForm[text()]">
@@ -607,7 +607,7 @@
                                     <xsl:if test="self::cei:space">
                                         <xsl:text>&#x200D;</xsl:text>
                                         <fo:inline font-style="italic">
-                                            <xsl:text>Segue spazio lasciato in bianco </xsl:text>
+                                            <xsl:text>Spazio lasciato in bianco </xsl:text>
                                             <xsl:if test="string-length(@extent) != 0">
                                                 <xsl:analyze-string select="@extent"
                                                   regex="/\w?[^/]*\w?/">
@@ -837,20 +837,36 @@
                     <xsl:when test=".//cei:witListPar/cei:witness[@n]">
                         <xsl:text>; </xsl:text>
                     </xsl:when>
+                    <!-- Fall 1: Es gibt keine Kopien -->
                     <xsl:otherwise>
                         <xsl:text>. </xsl:text>
                     </xsl:otherwise>
                 </xsl:choose>
                 <!-- Copia -->
-                <xsl:if test=".//cei:witListPar/cei:witness[@n]">
-                    <xsl:for-each select=".//cei:witListPar/cei:witness[@n]">
+                <!-- Ausgabe Kopien -->
+                <xsl:if
+                    test=".//cei:witListPar/cei:witness[@n]">
+                    <xsl:for-each
+                        select=".//cei:witListPar/cei:witness[@n]">
                         <xsl:value-of select=".//cei:traditioForm"/>
                         <xsl:text>, </xsl:text>
-                        <xsl:value-of select=".//cei:repository"/>
-                        <xsl:text> </xsl:text>
-                        <xsl:value-of select=".//cei:idno"/>
-                        <xsl:text> </xsl:text>
-                        <xsl:value-of select="concat('[', ./@n, ']')"/>
+                        <!-- <cei:arch -->
+                        <xsl:if test="ancestor::cei:text//cei:arch/text()">
+                            <xsl:value-of
+                                select="normalize-space(cei:archIdentifier/cei:arch/text())"/>
+                            <xsl:text> </xsl:text>
+                        </xsl:if>
+                        <!-- <cei:idno> -->
+                        <xsl:if test="ancestor::cei:text//cei:idno/text()">
+                            <xsl:value-of
+                                select="normalize-space(cei:archIdentifier/cei:idno/text())"/>
+                        </xsl:if>
+                        <xsl:if test=".[@n]">
+                            <xsl:value-of select="concat(' [', @n, ']')"/>
+                        </xsl:if>
+                        <xsl:if test="cei:archIdentifier/text()[preceding-sibling::cei:idno]">
+                            <xsl:value-of select="concat('', cei:archIdentifier/text()[last()])"/>
+                        </xsl:if>
                     </xsl:for-each>
                     <xsl:text>. </xsl:text>
                 </xsl:if>
