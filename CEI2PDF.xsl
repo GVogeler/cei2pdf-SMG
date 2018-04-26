@@ -2704,12 +2704,12 @@
                         </xsl:analyze-string>
                         <xsl:text>, </xsl:text>
                         <xsl:variable name="entry_nodes">
-                        <xsl:for-each select="$result//atom:entry">
+                        <xsl:for-each select="$result//cei:group/cei:text">
                             <xsl:sort select="concat(.//cei:dateRange/@from, .//cei:witnessOrig//cei:archIdentifier//cei:idno)"></xsl:sort>
                             <xsl:copy-of select="."></xsl:copy-of>
                         </xsl:for-each>
                         </xsl:variable>
-                            <xsl:for-each select="$entry_nodes/atom:entry[.//cei:persName/@reg = current()] | $entry_nodes/atom:entry[.//cei:placeName/@reg = current()] | $entry_nodes/atom:entry[.//cei:geogName/@reg = current()]">
+                            <xsl:for-each select="$entry_nodes/cei:text[.//cei:persName/@reg = current()] | $entry_nodes/cei:text[.//cei:placeName/@reg = current()] | $entry_nodes/cei:text[.//cei:geogName/@reg = current()]">
                             <xsl:number select="."/>
                             <xsl:if test="position() != last()">
                                 <xsl:text>, </xsl:text>
