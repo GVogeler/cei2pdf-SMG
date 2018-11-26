@@ -982,7 +982,7 @@
                 </fo:flow>
             </fo:page-sequence> -->
 
-            <fo:page-sequence master-reference="seitenfolgen_2" font-family="Times-New-Roman">
+            <xsl:if test="$result//cei:persName[@reg] | $result//cei:placeName[@reg] | $result//cei:geogName[@reg]"><fo:page-sequence master-reference="seitenfolgen_2" font-family="Times-New-Roman">
 
                 <fo:static-content flow-name="kopf-rechte-seiten">
                     <fo:table table-layout="fixed" width="100%">
@@ -1023,12 +1023,9 @@
                         </fo:table-body>
                     </fo:table>
                 </fo:static-content>
-                <fo:flow flow-name="xsl-region-body">
-                    <xsl:call-template name="Index"/>
-
-                </fo:flow>
+                <xsl:call-template name="Index"/>
             </fo:page-sequence>
-
+            </xsl:if>
         </fo:root>
 
     </xsl:template>
@@ -2717,7 +2714,8 @@
     <!-- Templates Register -->
 
     <xsl:template name="Index">
-        <xsl:for-each-group
+        <fo:flow flow-name="xsl-region-body">
+            <xsl:for-each-group
             select="//cei:persName[@reg] | //cei:placeName[@reg] | //cei:geogName[@reg]"
             group-by="@reg/substring(lower-case(.), 1, 1)">
             <xsl:sort select="current-grouping-key()"/>
@@ -2757,6 +2755,7 @@
             </fo:block>
             <fo:block space-after="5mm"/>
         </xsl:for-each-group>
+        </fo:flow>
     </xsl:template>
 
     <!-- Namensregister 
